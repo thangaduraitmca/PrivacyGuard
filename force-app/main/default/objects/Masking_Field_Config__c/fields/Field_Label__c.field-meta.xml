@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Field_Label__c</fullName>
+    <label>Field Label</label>
+    <description>Field label at configuration time.</description>
+    <inlineHelpText>Display label captured from Salesforce Describe for administrator reference.</inlineHelpText>
+    <length>255</length>
+    <type>Text</type>
+</CustomField>

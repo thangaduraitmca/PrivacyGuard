@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Keyword__c</fullName>
+    <label>Keyword</label>
+    <inlineHelpText>Keyword PrivacyGuard uses when evaluating field names and labels for potential PII.</inlineHelpText><type>Text</type>
+    <length>100</length>
+    <description>Case-insensitive substring matched against field label and API name, e.g. "ssn", "passport", "dob"</description>
+</CustomField>

@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Original_State_Json__c</fullName>
+    <label>Original State</label>
+    <inlineHelpText>Stores the original automation state captured by PrivacyGuard so the component can be restored after masking.</inlineHelpText><type>Text</type>
+    <length>255</length>
+    <description>What's needed to restore this component - for a Flow, its active version number before deactivation. Blank/not applicable for Validation Rules (a simple boolean flip).</description>
+</CustomField>

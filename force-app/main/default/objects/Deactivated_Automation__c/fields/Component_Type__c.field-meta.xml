@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Component_Type__c</fullName>
+    <label>Component Type</label>
+    <inlineHelpText>Component Type of the automation component tracked by PrivacyGuard for controlled deactivation and restoration.</inlineHelpText><type>Text</type>
+    <length>30</length>
+    <description>FLOW, VALIDATION_RULE, or APEX_TRIGGER</description>
+</CustomField>

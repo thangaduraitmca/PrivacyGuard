@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Job_Type__c</fullName>
+    <label>Job Type</label>
+    <inlineHelpText>Job Type used by PrivacyGuard for masking job sequence processing and audit control.</inlineHelpText><type>Text</type>
+    <length>30</length>
+    <description>FIELD_MASKING (default if blank), ATTACHMENT_DELETION, or FILE_DELETION. Determines which batch class runs this job and which other fields on this record apply.</description>
+</CustomField>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Bypass_All_Automations__c</fullName>
+    <label>Bypass All Automations</label>
+    <inlineHelpText>Master bypass flag used by PrivacyGuard-aware automation. Subscriber automation must explicitly reference this setting for the bypass to take effect.</inlineHelpText><type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+</CustomField>

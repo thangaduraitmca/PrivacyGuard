@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus><description>PrivacyGuard runtime masking job orchestration and audit data.</description>
+    <label>Masking Job Run Object</label><pluralLabel>Masking Job Run Objects</pluralLabel>
+    <nameField><type>AutoNumber</type><label>Masking Job Run Object Number</label><displayFormat>MROBJ-{0000}</displayFormat></nameField>
+    <sharingModel>ReadWrite</sharingModel><enableFeeds>false</enableFeeds>
+</CustomObject>

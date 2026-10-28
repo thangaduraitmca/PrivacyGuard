@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Component_Name__c</fullName>
+    <label>Component Name</label>
+    <inlineHelpText>Component Name of the automation component tracked by PrivacyGuard for controlled deactivation and restoration.</inlineHelpText><type>Text</type>
+    <length>255</length>
+</CustomField>

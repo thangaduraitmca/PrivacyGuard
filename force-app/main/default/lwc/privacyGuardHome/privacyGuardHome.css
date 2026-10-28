@@ -1,0 +1,125 @@
+:host{display:block;font-family:Arial,sans-serif;color:#061c36}.shell{display:flex;min-height:calc(100vh - 130px);background:#eff8fc;border-radius:24px;overflow:hidden}.sidebar{width:255px;flex-shrink:0;background:#073579;color:#fff;padding:28px 20px;display:flex;flex-direction:column}.brand{display:flex;gap:14px;align-items:center;font-weight:800;font-size:20px;line-height:1.25;letter-spacing:.3px;margin:8px 12px 52px}.brand-icon{display:grid;place-items:center;background:#062654;color:#6ce9fa;border-radius:14px;width:46px;height:46px;font-size:32px}.sidebar nav{display:grid;gap:10px}.nav-link{width:100%;border:0;border-radius:20px;background:transparent;color:#fff;text-align:left;display:flex;align-items:center;gap:16px;padding:18px 16px;font-size:16px;cursor:pointer}.nav-link.active,.nav-link:hover,.nav-link:focus-visible{background:#245394}.nav-link lightning-icon{--slds-c-icon-color-foreground-default:#fff}.sidebar-footer{font-size:11px;color:#c6ddf8;margin-top:auto;padding:28px 12px 0}.main{padding:38px;flex:1;min-width:0}.heading{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:35px}.eyebrow{color:#008d9e;font-weight:700;letter-spacing:4px;font-size:17px;max-width:330px;line-height:1.5}h1{font-size:38px;line-height:1.15;font-weight:800;margin:12px 0}p{color:#536b7e;font-size:15px}.status-pill{border-radius:40px;padding:15px 22px;font-size:17px;font-weight:700;display:flex;align-items:center;gap:12px;max-width:270px}.status-pill.good{background:#d9f9e9;color:#007e53}.status-pill.caution{background:#fff0d6;color:#8c5b00}.status-dot{width:13px;height:13px;border-radius:50%;background:currentColor;flex-shrink:0}.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}.metric,.panel{background:#fff;border:1px solid #d4e4ef;border-radius:24px;box-shadow:0 2px 4px #092f501c}.metric{padding:24px 20px;min-height:225px;display:flex;flex-direction:column}.metric-icon{border-radius:14px;width:52px;height:52px;display:grid;place-items:center;margin-bottom:22px}.metric-icon.green{background:#d8f9e9}.metric-icon.blue{background:#e7eef8}.metric-icon.cyan{background:#ddfaff}.metric-label{font-size:14px;color:#35556d;letter-spacing:.5px;min-height:40px}.metric-value{font-size:38px;font-weight:800;margin:12px 0 3px}.metric-note{font-size:12px;color:#65798b}.status-metric{background:#e1faed;border-color:#8edab8}.status-value{font-size:23px;color:#008653}.panels{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin:24px 0}.panel{padding:27px 30px;min-width:0}.panel h2{font-size:22px;font-weight:700;margin:0 0 10px}.coverage-line{text-align:right;color:#008c58;font-size:23px;margin:8px 0}.progress{background:#e6eff3;height:17px;border-radius:30px;overflow:hidden}.progress-fill{background:#008c5c;height:100%;border-radius:30px}.coverage-cards{display:flex;gap:12px;margin-top:24px}.coverage-cards>div{flex:1;background:#f0f8fc;border-radius:20px;padding:15px 8px;text-align:center;display:flex;flex-direction:column;gap:5px}.coverage-cards strong{font-size:24px}.coverage-cards span{font-size:11px;color:#536b7e}.footnote{font-size:12px;margin-top:15px}.privacy-center{display:flex;align-items:center;gap:24px;margin:45px 0}.ring{border:12px solid #008b60;border-left-color:#c6e6dd;border-radius:50%;width:118px;height:118px;flex-shrink:0;display:grid;place-items:center}.ring lightning-icon{--slds-c-icon-color-foreground-default:#008b60}.privacy-center strong{font-size:27px;color:#008b60}.run-info{border-top:1px solid #e1eaf0;padding-top:18px;font-size:13px}.activity-title{display:flex;justify-content:space-between;align-items:center}.activity-title button{background:transparent;border:0;color:#008a9a;cursor:pointer}.runs{display:grid;gap:10px;margin-top:20px}.run{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:14px;background:#f0f8fc;border-radius:14px}.run div{display:flex;flex-direction:column;gap:4px}.run span{font-size:12px}.run-status{font-weight:700}.good-text{color:#008653}.warning-text{color:#ad6000}.notice{background:#fff0e5;border:1px solid #eeb9a0;padding:15px;border-radius:12px;margin-bottom:15px}@media(max-width:1100px){.metrics{grid-template-columns:repeat(2,1fr)}.panels{grid-template-columns:1fr}.sidebar{width:210px}.main{padding:25px}}@media(max-width:650px){.shell{flex-direction:column}.sidebar{width:auto;padding:15px}.brand{margin:0 0 15px}.sidebar nav{display:flex;overflow-x:auto}.nav-link{min-width:max-content;padding:12px}.sidebar-footer{display:none}.heading{flex-direction:column}.metrics{grid-template-columns:1fr 1fr;gap:10px}.metric{padding:15px;min-height:180px}.metric-value{font-size:30px}.main{padding:15px}.panel{padding:18px}.privacy-center{gap:12px}.ring{width:80px;height:80px;border-width:8px}}
+/* Consistent content canvas for every PrivacyGuard section */
+.main>c-pii-scan-review,.main>c-data-masking-configuration,.main>c-masking-control-panel,.main>c-pii-keyword-configuration,.main>c-automation-management,.main>c-attachment-file-purge{display:block;width:100%;}
+.sidebar{position:sticky;top:0;align-self:flex-start;min-height:calc(100vh - 130px)}
+.main{background:#eff8fc;}
+
+/* PrivacyGuard premium navigation branding */
+.sidebar { background: #0b355b; }
+.brand { gap: 11px; margin: 8px 4px 40px; font-size: 19px; letter-spacing: .15px; }
+.brand-icon { flex-shrink: 0; width: 50px; height: 54px; border-radius: 14px; background: #06284a; }
+.brand-wordmark { display: flex; flex-direction: column; line-height: 1.04; font-size: 21px; font-weight: 800; color: #fff; }
+.brand-wordmark span { color: #65e9ff; }
+/* Dashboard heading uses the same header treatment as the feature pages */
+.heading { background: #0b355b; color: #fff; padding: 32px 38px; border-radius: 22px; box-shadow: 0 10px 26px rgba(8,44,83,.13); }
+.heading .eyebrow { color: #c9deef; font-size: 13px; font-weight: 800; letter-spacing: 2.1px; max-width: none; }
+.heading h1 { color: #fff; font-size: clamp(30px,3vw,48px); font-weight: 400; line-height: 1.15; margin: 12px 0 14px; }
+.heading p { color: #fff; font-size: clamp(15px,1.2vw,19px); line-height: 1.55; }
+@media (max-width: 720px) { .heading { padding: 24px; } .heading h1 { font-size: 30px; } }
+
+
+/* PrivacyGuard compact enterprise page header — 2026 redesign.
+   Scoped to header elements; no behaviour or backend changes. */
+.pg-feature-hero, .hero, .heading {
+  box-sizing: border-box !important;
+  background: #0d3455 !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(181,218,245,.14) !important;
+  border-radius: 15px !important;
+  padding: 18px 24px !important;
+  margin-bottom: 16px !important;
+  min-height: 0 !important;
+  box-shadow: 0 5px 15px rgba(8,44,83,.09) !important;
+}
+.pg-feature-eyebrow, .hero .eyebrow, .heading .eyebrow {
+  color: #b9d6ee !important;
+  font-size: 10px !important;
+  font-weight: 750 !important;
+  letter-spacing: 1.65px !important;
+  line-height: 1.3 !important;
+  margin: 0 0 5px !important;
+  opacity: 1 !important;
+}
+.pg-feature-hero h1, .hero h1, .heading h1 {
+  color: #fff !important;
+  font-size: clamp(23px, 2.1vw, 30px) !important;
+  font-weight: 400 !important;
+  line-height: 1.2 !important;
+  letter-spacing: -.35px !important;
+  margin: 0 0 5px !important;
+}
+.pg-feature-hero p, .hero p, .heading p {
+  color: #dceaf4 !important;
+  font-size: 14px !important;
+  line-height: 1.4 !important;
+  max-width: 750px !important;
+  margin: 0 !important;
+  opacity: 1 !important;
+}
+/* Action buttons retain their original click handlers and disabled states. */
+.hero {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 18px !important;
+}
+.hero-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+}
+.hero lightning-button, .hero-actions lightning-button { flex-shrink: 0; white-space: nowrap; }
+@media (max-width: 980px) {
+  .hero { flex-wrap: wrap !important; align-items: flex-start !important; }
+  .hero-actions { justify-content: flex-start !important; }
+}
+@media (max-width: 600px) {
+  .pg-feature-hero, .hero, .heading { padding: 16px 18px !important; border-radius: 13px !important; }
+  .pg-feature-hero h1, .hero h1, .heading h1 { font-size: 23px !important; }
+  .pg-feature-hero p, .hero p, .heading p { font-size: 13px !important; }
+  .hero-actions { flex-wrap: wrap !important; }
+}
+
+
+/* PrivacyGuard compact branded headers — presentation-only */
+.pg-header-copy { display:flex; align-items:center; gap:16px; min-width:0; flex:1 1 auto; }
+.pg-header-text { min-width:0; }
+.pg-header-icon {
+  display:flex; flex:0 0 54px; width:54px; height:54px;
+  align-items:center; justify-content:center; border-radius:13px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
+}
+.pg-header-icon lightning-icon { --slds-c-icon-color-foreground-default:#fff; --sds-c-icon-color-foreground-default:#fff; }
+.pg-header-icon--blue { background:linear-gradient(145deg,#1479d1,#0452a5); }
+.pg-header-icon--purple { background:linear-gradient(145deg,#8268dc,#4d36a4); }
+.pg-header-icon--green { background:linear-gradient(145deg,#29ad69,#137c50); }
+.pg-header-icon--pink { background:linear-gradient(145deg,#f34c80,#c82a59); }
+.pg-header-icon--orange { background:linear-gradient(145deg,#ff8544,#ef541e); }
+.pg-header-icon--teal { background:linear-gradient(145deg,#15a5b8,#047a8f); }
+.pg-header-icon--cyan { background:linear-gradient(145deg,#1ca7d2,#08759e); }
+.pg-feature-hero, .hero, .heading {
+  min-height:106px !important; padding:17px 22px !important;
+  border-radius:15px !important; background:#0d3555 !important;
+  box-shadow:0 5px 16px rgba(8,36,61,.10) !important;
+}
+.pg-feature-hero { display:flex !important; flex-wrap:wrap; align-items:center !important; justify-content:space-between; gap:16px; }
+.pg-feature-hero h1, .hero h1, .heading h1 {
+  font-size:clamp(21px,2vw,28px) !important; font-weight:400 !important;
+  line-height:1.18 !important; margin:2px 0 4px !important;
+}
+.pg-feature-hero p, .hero p, .heading p {
+  font-size:14px !important; line-height:1.35 !important;
+  max-width:620px !important; margin:0 !important;
+}
+.pg-feature-eyebrow, .eyebrow { font-size:10px !important; letter-spacing:1.5px !important; margin:0 0 4px !important; }
+.pg-header-actions { flex:0 0 auto; display:flex; align-items:center; gap:8px; }
+@media (max-width:850px) {
+  .pg-feature-hero,.hero,.heading { padding:16px 18px !important; }
+  .pg-header-icon { flex-basis:44px; width:44px; height:44px; border-radius:11px; }
+  .pg-header-copy { gap:12px; }
+  .pg-header-actions { width:100%; }
+}

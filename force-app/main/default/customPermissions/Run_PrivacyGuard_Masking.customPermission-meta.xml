@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Run PrivacyGuard Masking</label>
+    <description>Authorizes execution of PrivacyGuard data masking jobs. Assign only to approved operators.</description>
+</CustomPermission>

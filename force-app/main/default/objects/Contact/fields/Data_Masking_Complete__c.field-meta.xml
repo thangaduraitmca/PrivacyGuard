@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Data_Masking_Complete__c</fullName>
+    <label>Data Masking Complete</label>
+    <description>True only after all configured masking fields and this flag save successfully. Reset to false to make a record eligible again. The flag is shared by masking jobs for this object.</description>
+    <inlineHelpText>PrivacyGuard sets this checkbox after successful masking. Unmasked-only jobs skip records already marked true.</inlineHelpText>
+    <type>Checkbox</type><defaultValue>false</defaultValue>
+</CustomField>

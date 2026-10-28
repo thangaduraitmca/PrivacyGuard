@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Is_Active__c</fullName>
+    <label>Active</label>
+    <description>Whether this field is eligible for masking execution.</description>
+    <inlineHelpText>Only active configurations are eligible for masking execution. New configurations default to inactive.</inlineHelpText>
+    <defaultValue>false</defaultValue>
+    <type>Checkbox</type>
+</CustomField>

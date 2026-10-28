@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Sequence_Order__c</fullName>
+    <label>Sequence Order</label>
+    <inlineHelpText>Controls the order in which PrivacyGuard executes this masking job relative to other configured jobs.</inlineHelpText><type>Number</type>
+    <precision>18</precision>
+    <scale>0</scale>
+    <description>Only relevant for Serial jobs - determines execution order.</description>
+</CustomField>

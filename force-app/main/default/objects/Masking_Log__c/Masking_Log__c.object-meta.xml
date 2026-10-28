@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Structured error/info log written by the masking framework so failures are meaningful and queryable.</description>
+    <label>Masking Log</label>
+    <pluralLabel>Masking Logs</pluralLabel>
+    <nameField>
+        <type>AutoNumber</type>
+        <label>Masking Log Number</label>
+        <displayFormat>MLOG-{0000}</displayFormat>
+    </nameField>
+    <sharingModel>ReadWrite</sharingModel>
+    <enableFeeds>false</enableFeeds>
+</CustomObject>

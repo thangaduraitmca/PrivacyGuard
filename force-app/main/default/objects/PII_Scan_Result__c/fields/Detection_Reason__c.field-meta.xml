@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Detection_Reason__c</fullName>
+    <label>Detection Reason</label>
+    <inlineHelpText>Explains why PrivacyGuard identified this field as potentially containing personally identifiable or sensitive information.</inlineHelpText><type>Text</type>
+    <length>255</length>
+    <description>Why this field was flagged, e.g. "Field type: Email", "Keyword match: ssn", "Already Shield-encrypted"</description>
+</CustomField>

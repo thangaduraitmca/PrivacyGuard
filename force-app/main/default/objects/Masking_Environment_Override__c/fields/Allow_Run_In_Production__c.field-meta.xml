@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Allow_Run_In_Production__c</fullName>
+    <label>Allow Run In Production</label>
+    <inlineHelpText>Controls whether PrivacyGuard may run masking operations in a production org. Keep disabled unless production execution has been explicitly approved and governed.</inlineHelpText><type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+    <description>Leave false. The framework blocks all masking/deletion jobs outside of Sandboxes by default. Only enable this with deliberate, documented sign-off - it defeats the core safety net of this tool.</description>
+</CustomField>

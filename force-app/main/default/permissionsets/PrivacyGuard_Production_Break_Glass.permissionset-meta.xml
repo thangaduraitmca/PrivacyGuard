@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>PrivacyGuard Production Break Glass</label>
+    <description>Highly privileged emergency permission. Does not enable production execution by itself; the separate org-level production override setting must also be enabled. Assign temporarily under approved change control.</description>
+    <hasActivationRequired>true</hasActivationRequired>
+    <customPermissions><enabled>true</enabled><name>Override_PrivacyGuard_Production_Block</name></customPermissions>
+</PermissionSet>

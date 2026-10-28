@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Masking_Pattern__c</fullName>
+    <label>Masking Pattern</label>
+    <inlineHelpText>Optional masking pattern or replacement value interpreted by the selected PrivacyGuard masking strategy.</inlineHelpText><type>Text</type>
+    <length>255</length>
+    <description>Strategy-specific parameter, e.g. length for RANDOM_STRING, literal value for STATIC, "regex=&gt;replacement" for REGEX</description>
+</CustomField>

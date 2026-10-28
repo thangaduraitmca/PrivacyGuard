@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Governed subscriber configuration for fields selected for PrivacyGuard masking. Records are created only by an administrator and are inactive by default.</description>
+    <enableActivities>false</enableActivities>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>true</enableHistory>
+    <label>Data Masking Configuration</label>
+    <nameField><label>Configuration Number</label><type>AutoNumber</type><displayFormat>PGCFG-{000000}</displayFormat></nameField>
+    <pluralLabel>Data Masking Configurations</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+</CustomObject>

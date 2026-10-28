@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Masking_Strategy__c</fullName>
+    <label>Masking Strategy</label>
+    <description>Governed masking strategy key.</description>
+    <inlineHelpText>Masking strategy selected by an administrator. A strategy is required before activation.</inlineHelpText>
+    <length>80</length>
+    <type>Text</type>
+</CustomField>

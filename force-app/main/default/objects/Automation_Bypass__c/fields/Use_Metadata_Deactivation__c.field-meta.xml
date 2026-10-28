@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Use_Metadata_Deactivation__c</fullName>
+    <label>Use Metadata Deactivation</label>
+    <inlineHelpText>Controls whether PrivacyGuard may use metadata operations to deactivate supported automations during a masking run. Enable only with explicit administrative approval and the separate Metadata Deactivation Break Glass permission.</inlineHelpText><type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+    <description>High-risk opt-in. When true and the running user has the separate Use PrivacyGuard Metadata Deactivation custom permission, disableAllAutomations() also queries and actually deactivates every active Flow and Validation Rule via the Tooling API (not just flipping bypass flags), and reactivates them afterward. Requires a Remote Site Setting for this org's own My Domain URL. Apex Triggers are NOT covered by this - they still rely on Bypass_Triggers__c being checked in trigger code, since toggling trigger status via the Tooling API requires an async compile step this framework doesn't attempt. Test in a sandbox before relying on this in any org with many automations - see README for callout-limit caveats.</description>
+</CustomField>

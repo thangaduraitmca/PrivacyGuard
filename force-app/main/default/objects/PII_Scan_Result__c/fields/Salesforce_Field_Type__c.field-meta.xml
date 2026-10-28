@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Salesforce_Field_Type__c</fullName>
+    <label>Salesforce Field Type</label>
+    <inlineHelpText>Salesforce schema data type of the field identified by the PrivacyGuard PII scanner.</inlineHelpText><type>Text</type>
+    <length>50</length>
+    <description>The actual Schema.DisplayType, e.g. EMAIL, PHONE, STRING, ENCRYPTEDSTRING</description>
+</CustomField>

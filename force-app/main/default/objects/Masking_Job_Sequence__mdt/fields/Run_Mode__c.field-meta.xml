@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Run_Mode__c</fullName>
+    <label>Run Mode</label>
+    <inlineHelpText>Determines whether PrivacyGuard masks all eligible records, changed records only, or records only once.</inlineHelpText><type>Text</type>
+    <length>20</length>
+    <description>Full (mask every record every run, default), Delta (mask only records created/modified since they were last masked - requires a DateTime Delta_Tracking_Field__c and can detect a record being re-populated with real data after masking), or Once (mask each record a single time ever - requires a Checkbox Delta_Tracking_Field__c, simpler than Delta but cannot detect a record being re-populated with real data after masking, since a boolean carries no timing information).</description>
+</CustomField>

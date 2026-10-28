@@ -1,0 +1,11 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>PrivacyGuard</label>
+    <description>PrivacyGuard: configure and run field masking, PII scanning, and Attachment/File purging for sandbox data protection.</description>
+    <formFactors>Large</formFactors>
+    <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
+    <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
+    <navType>Standard</navType>
+    <tabs>PrivacyGuard_Home</tabs>
+    <uiType>Lightning</uiType>
+</CustomApplication>

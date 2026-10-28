@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Configuration_Source__c</fullName>
+    <label>Configuration Source</label>
+    <description>Configuration origin for audit traceability.</description>
+    <inlineHelpText>Shows whether the field entered scope from PII Discovery or direct manual configuration.</inlineHelpText>
+    <length>40</length>
+    <type>Text</type>
+</CustomField>

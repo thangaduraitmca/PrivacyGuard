@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Purge PrivacyGuard Files</label>
+    <description>Authorizes destructive deletion of Attachments and Salesforce Files through PrivacyGuard.</description>
+</CustomPermission>

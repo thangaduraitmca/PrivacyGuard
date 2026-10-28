@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Subscriber-maintained PII discovery keywords. These extend PrivacyGuard packaged keyword metadata without modifying package defaults.</description>
+    <enableActivities>false</enableActivities>
+    <enableFeeds>false</enableFeeds>
+    <enableHistory>true</enableHistory>
+    <label>PII Keyword Configuration</label>
+    <nameField><label>Keyword Number</label><type>AutoNumber</type><displayFormat>PGKW-{000000}</displayFormat></nameField>
+    <pluralLabel>PII Keyword Configurations</pluralLabel>
+    <sharingModel>ReadWrite</sharingModel>
+</CustomObject>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customSettingsType>Hierarchy</customSettingsType>
+    <description>Safety override. By default, the framework refuses to run any masking or deletion job in a non-Sandbox org (Production, or any org where Organization.IsSandbox is false). Set Allow_Run_In_Production__c to true only after deliberate, reviewed sign-off.</description>
+    <enableFeeds>false</enableFeeds>
+    <label>Masking Environment Override</label>
+    <visibility>Public</visibility>
+</CustomObject>

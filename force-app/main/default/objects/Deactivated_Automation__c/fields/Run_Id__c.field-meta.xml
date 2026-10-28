@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Run_Id__c</fullName>
+    <label>Run Id</label>
+    <inlineHelpText>Identifier that links this record to the PrivacyGuard masking run that created it.</inlineHelpText><type>Text</type>
+    <length>60</length>
+    <description>Correlates this deactivation with the masking run that caused it, so reactivation only restores components from the same run.</description>
+</CustomField>

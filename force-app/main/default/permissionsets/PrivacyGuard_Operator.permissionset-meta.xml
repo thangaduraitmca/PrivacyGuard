@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <applicationVisibilities><application>Data_Masking_Framework</application><visible>true</visible></applicationVisibilities>
+    <classAccesses>
+        <apexClass>PrivacyGuardHomeController</apexClass>
+        <enabled>true</enabled>
+    </classAccesses>
+    <classAccesses><apexClass>MaskingControlPanelController</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>MaskingFrameworkService</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>MaskingJobOrchestrator</apexClass><enabled>true</enabled></classAccesses>
+    <classAccesses><apexClass>PrivacyGuardSecurityService</apexClass><enabled>true</enabled></classAccesses>
+    <customPermissions><enabled>true</enabled><name>Run_PrivacyGuard_Masking</name></customPermissions>
+    <description>Least-privilege permission for approved users who can start configured sandbox masking runs. Does not grant purge, PII governance, production override, or metadata-deactivation privileges.</description>
+    <fieldPermissions><editable>true</editable><field>Account.Data_Masking_Complete__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Contact.Data_Masking_Complete__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Lead.Data_Masking_Complete__c</field><readable>true</readable></fieldPermissions>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>PrivacyGuard Operator</label>
+</PermissionSet>

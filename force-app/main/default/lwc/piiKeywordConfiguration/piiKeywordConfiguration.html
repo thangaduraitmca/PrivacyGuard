@@ -1,0 +1,31 @@
+<template>
+<section class="pg-feature-hero" aria-label="PII Keywords"><div class="pg-header-copy"><span class="pg-header-icon pg-header-icon--teal" aria-hidden="true"><lightning-icon icon-name="utility:key" size="medium" alternative-text=""></lightning-icon></span><div class="pg-header-text"><div class="pg-feature-eyebrow">PRIVACYGUARD • DISCOVERY RULES</div><h1>PII Keywords</h1><p>Manage the keywords used to identify potential sensitive data.</p></div></div></section>
+<lightning-card title="PII Keyword Configuration" icon-name="utility:search">
+<div class="slds-p-horizontal_medium">
+<p class="slds-m-bottom_medium">Add and maintain org-specific PII discovery keywords. New keywords are saved as active immediately and are used on the next PII scan.</p>
+<template if:true={busy}><lightning-spinner alternative-text="Updating PII keywords" size="small"></lightning-spinner></template>
+<section class="slds-box slds-m-bottom_medium">
+<div class="slds-grid slds-gutters">
+<div class="slds-col"><lightning-input label="New keyword" value={keyword} onchange={changeKeyword}></lightning-input></div>
+<div class="slds-col"><lightning-input label="Notes" value={notes} onchange={changeNotes}></lightning-input></div>
+</div>
+<lightning-button class="slds-m-top_small" variant="brand" label="Add Keyword" onclick={add} disabled={busy}></lightning-button>
+</section>
+<table class="slds-table slds-table_cell-buffer slds-table_bordered">
+<thead><tr><th>Keyword</th><th>Source</th><th>Active</th><th>Notes</th><th>Actions</th></tr></thead>
+<tbody><template for:each={rows} for:item="r"><tr key={r.key}>
+<template if:true={r.editable}>
+<td><lightning-input variant="label-hidden" data-id={r.id} data-field="keyword" value={r.keyword} onchange={rowChange}></lightning-input></td>
+<td>{r.source}</td>
+<td><lightning-input type="toggle" variant="label-hidden" data-id={r.id} data-field="active" checked={r.active} onchange={rowChange}></lightning-input></td>
+<td><lightning-input variant="label-hidden" data-id={r.id} data-field="notes" value={r.notes} onchange={rowChange}></lightning-input></td>
+<td><lightning-button label="Save" data-id={r.id} onclick={saveRow} disabled={busy}></lightning-button><lightning-button class="slds-m-left_x-small" variant="destructive-text" label="Delete" data-key={r.key} onclick={removeRow} disabled={busy}></lightning-button></td>
+</template>
+<template if:false={r.editable}>
+<td><strong>{r.keyword}</strong></td><td>{r.source}</td><td>Yes</td><td>Packaged default</td>
+<td><lightning-button variant="destructive-text" label="Delete" data-key={r.key} onclick={removeRow} disabled={busy}></lightning-button></td>
+</template>
+</tr></template></tbody>
+</table>
+</div></lightning-card>
+</template>

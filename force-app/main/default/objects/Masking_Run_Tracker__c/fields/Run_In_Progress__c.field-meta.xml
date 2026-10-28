@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Run_In_Progress__c</fullName><defaultValue>false</defaultValue><description>Concurrency guard indicating that a PrivacyGuard masking or purge run is currently active.</description><inlineHelpText>Selected while a PrivacyGuard run is active. A second destructive run is blocked until the current run completes.</inlineHelpText><label>Run In Progress</label><type>Checkbox</type></CustomField>

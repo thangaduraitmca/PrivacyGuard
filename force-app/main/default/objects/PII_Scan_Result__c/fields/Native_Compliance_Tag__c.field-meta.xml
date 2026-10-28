@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Native_Compliance_Tag__c</fullName>
+    <label>Native Compliance Tag</label>
+    <inlineHelpText>Salesforce native data classification or compliance category detected for this field, when available.</inlineHelpText><type>Text</type>
+    <length>255</length>
+    <description>Raw Compliance Group / Security Classification value read from Salesforce's built-in Data Classification metadata (Setup &gt; field detail &gt; Data Classification), via native Apex SOQL against FieldDefinition. Populated only if that lookup succeeds.</description>
+</CustomField>

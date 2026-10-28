@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Reactivated__c</fullName>
+    <label>Reactivated</label>
+    <inlineHelpText>Indicates whether PrivacyGuard successfully restored this automation component after the masking run.</inlineHelpText><type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+</CustomField>

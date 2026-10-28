@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Error_Message__c</fullName>
+    <label>Message</label>
+    <inlineHelpText>Error details captured by PrivacyGuard when a masking operation fails or is skipped.</inlineHelpText><type>LongTextArea</type>
+    <length>32768</length>
+    <visibleLines>10</visibleLines>
+</CustomField>

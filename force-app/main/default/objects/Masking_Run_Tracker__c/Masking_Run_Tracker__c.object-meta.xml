@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <customSettingsType>Hierarchy</customSettingsType>
+    <description>Internal tracker used by MaskingJobOrchestrator to know when every Serial/Parallel job has finished so it can re-enable automations exactly once.</description>
+    <enableFeeds>false</enableFeeds>
+    <label>Masking Run Tracker</label>
+    <visibility>Public</visibility>
+</CustomObject>

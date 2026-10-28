@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Masking_Strategy_Class__c</fullName>
+    <label>Masking Strategy Class (Override)</label>
+    <inlineHelpText>Optional Apex masking strategy class used by PrivacyGuard for this configuration. Leave blank to use the strategy selected by Field Type.</inlineHelpText><type>Text</type>
+    <length>255</length>
+    <description>Optional. Explicit Apex class implementing IMaskingStrategy. Leave blank to use the default for Field Type.</description>
+</CustomField>

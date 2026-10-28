@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>PrivacyGuard Metadata Deactivation Break Glass</label>
+    <description>Highly privileged permission required before Tooling API metadata deactivation can run. Assign temporarily and only after impact review.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <customPermissions><enabled>true</enabled><name>Use_PrivacyGuard_Metadata_Deactivation</name></customPermissions>
+</PermissionSet>

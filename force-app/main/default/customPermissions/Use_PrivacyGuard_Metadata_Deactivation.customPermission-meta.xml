@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>Use PrivacyGuard Metadata Deactivation</label>
+    <description>Highly privileged permission required before PrivacyGuard can deactivate subscriber Flows or Validation Rules through the Tooling API.</description>
+</CustomPermission>

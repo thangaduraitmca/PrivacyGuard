@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Already_Configured__c</fullName>
+    <label>Already In Masking Config</label>
+    <inlineHelpText>Indicates whether this field already has an active PrivacyGuard masking configuration.</inlineHelpText><type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+    <description>True if a matching active Masking_Configuration__mdt record already exists for this object/field</description>
+</CustomField>

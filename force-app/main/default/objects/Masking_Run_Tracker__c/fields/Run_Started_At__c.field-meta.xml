@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata"><fullName>Run_Started_At__c</fullName><description>Timestamp when the currently tracked PrivacyGuard run started.</description><inlineHelpText>Shows when the active PrivacyGuard run began and supports operational auditing and stale-run investigation.</inlineHelpText><label>Run Started At</label><type>DateTime</type></CustomField>

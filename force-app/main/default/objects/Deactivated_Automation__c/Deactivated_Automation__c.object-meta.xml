@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Records every Flow/Validation Rule the framework deactivated via the Tooling API for a given run, so it knows exactly what to restore afterward - and only what it actually turned off, not anything that was already inactive for unrelated business reasons.</description>
+    <label>Deactivated Automation</label>
+    <pluralLabel>Deactivated Automations</pluralLabel>
+    <nameField>
+        <type>AutoNumber</type>
+        <label>Deactivated Automation Number</label>
+        <displayFormat>DEACT-{0000}</displayFormat>
+    </nameField>
+    <sharingModel>ReadWrite</sharingModel>
+    <enableFeeds>false</enableFeeds>
+</CustomObject>

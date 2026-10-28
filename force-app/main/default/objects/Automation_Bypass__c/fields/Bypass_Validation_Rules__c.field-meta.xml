@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Bypass_Validation_Rules__c</fullName>
+    <label>Bypass Validation Rules</label>
+    <inlineHelpText>Controls whether PrivacyGuard-aware bypass validation rules are bypassed during an approved masking run.</inlineHelpText><type>Checkbox</type>
+    <defaultValue>false</defaultValue>
+</CustomField>

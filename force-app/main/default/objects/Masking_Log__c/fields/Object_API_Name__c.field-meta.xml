@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Object_API_Name__c</fullName>
+    <label>Object API Name</label>
+    <inlineHelpText>API name of the Salesforce object used by this Masking Log record. Enter the exact object API name.</inlineHelpText><type>Text</type>
+    <length>255</length>
+</CustomField>

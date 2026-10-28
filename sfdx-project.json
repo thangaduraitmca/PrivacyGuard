@@ -2,11 +2,16 @@
   "packageDirectories": [
     {
       "path": "force-app",
-      "default": true
+      "default": true,
+      "package": "PrivacyGuard",
+      "versionName": "ver 0.1",
+      "versionNumber": "0.1.0.NEXT"
     }
   ],
-  "name": "PrivacyGuard",
-  "namespace": "",
-  "sfdcLoginUrl": "https://login.salesforce.com",
-  "sourceApiVersion": "62.0"
+  "namespace": "privacyguard",
+  "sourceApiVersion": "66.0",
+  "packageAliases": {
+    "PrivacyGuard": "0HoQE0000000GUb0AM",
+    "PrivacyGuard@0.1.0-4": "04tQE00000jQNgbYAG"
+  }
 }

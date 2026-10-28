@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Data_Masking_Applied_Date__c</fullName>
+    <label>Data Masking Applied Date</label>
+    <inlineHelpText>Date and time when PrivacyGuard most recently applied masking to this record.</inlineHelpText><type>DateTime</type>
+    <description>Stamped by the masking framework each time this record is masked. Used to detect records created/modified since the last masking run (delta mode).</description>
+</CustomField>

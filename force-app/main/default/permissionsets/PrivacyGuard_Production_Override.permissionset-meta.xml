@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Break-glass permission allowing an authorized user to bypass the PrivacyGuard non-sandbox execution block when the organization-level Allow Run In Production setting is also enabled.</description>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>PrivacyGuard Production Override</label>
+    <customPermissions>
+        <enabled>true</enabled>
+        <name>Override_PrivacyGuard_Production_Block</name>
+    </customPermissions>
+</PermissionSet>

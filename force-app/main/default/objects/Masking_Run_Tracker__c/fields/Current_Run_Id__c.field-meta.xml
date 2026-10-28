@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Current_Run_Id__c</fullName>
+    <label>Current Run Id</label>
+    <inlineHelpText>Unique identifier for the currently tracked PrivacyGuard masking run.</inlineHelpText><type>Text</type>
+    <length>60</length>
+    <description>Set by AutomationManagerService.disableAllAutomations() when Use_Metadata_Deactivation__c is enabled, so enableAllAutomations() (running in a later, separate transaction) knows which Deactivated_Automation__c records to restore.</description>
+</CustomField>

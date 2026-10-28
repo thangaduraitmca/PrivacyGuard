@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Object_API_Name__c</fullName>
+    <label>Object API Name</label>
+    <description>Exact object API name selected through PrivacyGuard.</description>
+    <inlineHelpText>Salesforce API name of the object whose field is configured.</inlineHelpText>
+    <length>255</length>
+    <type>Text</type>
+</CustomField>

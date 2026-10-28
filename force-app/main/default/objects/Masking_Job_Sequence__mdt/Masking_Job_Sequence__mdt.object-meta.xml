@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Defines the masking jobs to run per object and whether they run Serial or Parallel.</description>
+    <label>Masking Job Sequence</label>
+    <pluralLabel>Masking Job Sequences</pluralLabel>
+    <visibility>Public</visibility>
+</CustomObject>

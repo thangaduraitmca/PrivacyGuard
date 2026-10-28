@@ -1,0 +1,28 @@
+<template>
+<div class="shell">
+  <div class="hero">
+    <div class="hero-copy pg-header-copy"><span class="pg-header-icon pg-header-icon--pink" aria-hidden="true"><lightning-icon icon-name="utility:settings" size="medium" alternative-text=""></lightning-icon></span><div class="pg-header-text"><div class="eyebrow">PRIVACYGUARD • AUTOMATION SAFETY</div><h1>Automation Management</h1><p>Manage Apex Triggers safely.</p></div></div>
+    <div class="hero-actions"><lightning-button label="Scan Triggers" icon-name="utility:search" onclick={load} disabled={loading}></lightning-button><lightning-button variant="brand" label="Deactivate Selected" icon-name="utility:pause" onclick={deactivate} disabled={noSelection}></lightning-button><lightning-button label="Restore Selected" icon-name="utility:reset_password" onclick={restore} disabled={noSelection}></lightning-button></div>
+  </div>
+  <div class="safety"><lightning-icon icon-name="utility:shield" size="small"></lightning-icon><div><strong>Safe restoration</strong><span> PrivacyGuard records the original state. Only Apex Trigger management is supported. Verify the deployment result before masking or restoring.</span></div></div>
+  <template if:true={discoveryWarning}><div class="safety" role="alert"><strong>Partial discovery:</strong><span>{discoveryWarning}</span></div></template>
+  <template if:true={hasPending}><div class="safety" role="status">Trigger deployments are queued or processing. Results refresh every 15 seconds while this page is open. Wait for Succeeded before masking.</div></template>
+  <template if:true={checkRequired}><div class="safety" role="alert"><span>A deployment needs another status check. Its outcome has not been marked failed.</span><lightning-button label="Check Deployment Status" onclick={checkDeployments} disabled={loading}></lightning-button></div></template>
+  <div class="stats">
+    <div class="stat"><span>Total discovered</span><strong>{summary.total}</strong></div><div class="stat"><span>Currently active</span><strong>{summary.active}</strong></div><div class="stat"><span>Tracked for restore</span><strong>{summary.tracked}</strong></div><div class="stat"><span>Selected</span><strong>{selectedCount}</strong></div>
+  </div>
+  <div class="toolbar">
+    <lightning-input type="search" variant="label-hidden" placeholder="Search trigger or object…" onchange={search}></lightning-input>
+    <lightning-combobox variant="label-hidden" value={stateFilter} options={stateOptions} onchange={filterState}></lightning-combobox>
+  </div>
+  <div class="card">
+    <div class="card-title"><div><h2>Discovered Apex Triggers</h2><p>Select the Apex Triggers you want PrivacyGuard to control. Namespaced triggers are read-only.</p></div><span class="pill">{visibleCount} shown</span></div>
+    <template if:true={loading}><lightning-spinner alternative-text="Discovering Apex Triggers"></lightning-spinner></template>
+    <div class="tablewrap"><table><thead><tr><th class="check"><lightning-input type="checkbox" variant="label-hidden" onchange={toggleAll} disabled={noSelectableRows}></lightning-input></th><th>Type</th><th>Object</th><th>Trigger</th><th>Current State</th><th>Details</th><th>Deployment</th></tr></thead><tbody>
+      <template for:each={filtered} for:item="r"><tr key={r.key}><td><lightning-input type="checkbox" variant="label-hidden" data-key={r.key} checked={r.selected} disabled={r.readOnly} onchange={toggleOne}></lightning-input></td><td><span class={r.typeClass}>{r.typeLabel}</span></td><td>{r.objectName}</td><td><strong>{r.name}</strong></td><td><span class={r.stateClass}><i></i>{r.state}</span></td><td>{r.detail}</td><td><strong>{r.deploymentStatus}</strong><div>{r.deploymentTarget}</div><div>{r.deploymentMessage}</div><small>{r.deploymentRequestId}</small></td></tr></template>
+    </tbody></table></div>
+    <template if:true={empty}><div class="empty"><lightning-icon icon-name="utility:search" size="medium"></lightning-icon><h3>No Apex Triggers match your filters</h3><p>{emptyMessage}</p></div></template>
+  </div>
+  <div class="footer-note"><strong>Masking lifecycle:</strong><span> Capture state</span><b>→</b><span> Deactivate selected</span><b>→</b><span> Run masking</span><b>→</b><span> Restore original state</span><b>→</b><span> Verify</span></div>
+</div>
+</template>
