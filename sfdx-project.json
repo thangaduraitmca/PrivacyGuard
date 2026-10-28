@@ -4,8 +4,9 @@
       "path": "force-app",
       "default": true,
       "package": "PrivacyGuard",
-      "versionName": "ver 0.1",
-      "versionNumber": "0.1.0.NEXT"
+      "versionName": "PrivacyGuard 0.1 Beta",
+      "versionNumber": "0.1.0.NEXT",
+      "versionDescription": "Sandbox data masking with PII discovery, configurable masking strategies, job monitoring, and trigger deployment tracking."
     }
   ],
   "namespace": "privacyguard",
