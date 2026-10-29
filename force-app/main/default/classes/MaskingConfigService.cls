@@ -40,7 +40,7 @@ public with sharing class MaskingConfigService {
     private static Boolean canMaskField(String objectName, String fieldName) {
         Schema.SObjectType objectToken = Schema.getGlobalDescribe().get(objectName);
         if (objectToken == null) return false;
-        Schema.SObjectField fieldToken = objectToken.getDescribe().fields.getMap().get(fieldName);
+        Schema.SObjectField fieldToken = PrivacyGuardSchema.fields(objectToken.getDescribe()).get(fieldName);
         if (fieldToken == null) return false;
         Schema.DescribeFieldResult d = fieldToken.getDescribe();
         String name = d.getName().toLowerCase();

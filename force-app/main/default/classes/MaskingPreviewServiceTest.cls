@@ -1,6 +1,7 @@
 @IsTest
 private class MaskingPreviewServiceTest {
     @TestSetup static void setup() {
+        PrivacyGuardPackageTestAccess.grantAdmin();
         List<Contact> people=new List<Contact>();
         for(Integer i=0;i<7;i++)people.add(new Contact(LastName='Private',Email='private@example.com',OtherPostalCode='2153',Data_Masking_Complete__c=i==0));
         insert people;

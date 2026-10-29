@@ -1,5 +1,7 @@
 @IsTest
 private class RegexMaskSafetyTest {
+    @TestSetup static void packagePermissions() { PrivacyGuardPackageTestAccess.grantAdmin(); }
+
     private static void rejects(String rule) {
         Boolean blocked=false;
         try { RegexReplaceMaskStrategy.validateRule(rule); }

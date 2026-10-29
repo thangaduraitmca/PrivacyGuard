@@ -170,7 +170,7 @@ public without sharing class MaskingBatch implements Database.Batchable<SObject>
         Map<Integer, IMaskingStrategy> strategiesByIndex = new Map<Integer, IMaskingStrategy>();
         if (scope.isEmpty()) return;
         Map<String, Schema.SObjectField> targetFields =
-            scope[0].getSObjectType().getDescribe().fields.getMap();
+            PrivacyGuardSchema.fields(scope[0].getSObjectType().getDescribe());
         Map<String, Schema.DescribeFieldResult> staticFieldDescribes =
             new Map<String, Schema.DescribeFieldResult>();
 
@@ -270,7 +270,7 @@ public without sharing class MaskingBatch implements Database.Batchable<SObject>
 
     /** Catches a common misconfiguration early with a clear message, rather than a cryptic SOQL type-mismatch error later. */
     private void validateTrackingFieldType(Schema.DescribeSObjectResult objDescribe, Schema.DisplayType expectedType) {
-        Schema.DisplayType actualType = objDescribe.fields.getMap().get(trackingField.toLowerCase()).getDescribe().getType();
+        Schema.DisplayType actualType = PrivacyGuardSchema.fields(objDescribe).get(trackingField.toLowerCase()).getDescribe().getType();
         if (actualType != expectedType) {
             throw new SchemaValidationUtil.InvalidSchemaReferenceException(
                 'Delta_Tracking_Field__c "' + trackingField + '" on ' + objDescribe.getName() +

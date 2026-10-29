@@ -47,7 +47,7 @@ public without sharing class MaskingFailedRecordRecoveryBatch
         if (runMode != 'Delta') trackingField = MaskingCompletionService.requireCheckbox(objectApiName, trackingField);
         if (runMode == 'Delta' || runMode == 'Once') {
             SchemaValidationUtil.requireValidField(objDescribe, trackingField);
-            Schema.DescribeFieldResult trackingDescribe = objDescribe.fields.getMap().get(trackingField.toLowerCase()).getDescribe();
+            Schema.DescribeFieldResult trackingDescribe = PrivacyGuardSchema.fields(objDescribe).get(trackingField.toLowerCase()).getDescribe();
             Schema.DisplayType requiredType = runMode == 'Delta' ? Schema.DisplayType.DATETIME : Schema.DisplayType.BOOLEAN;
             if (trackingDescribe.getType() != requiredType) {
                 throw new MaskingRecoveryException('Invalid tracking field type for ' + runMode + '.');

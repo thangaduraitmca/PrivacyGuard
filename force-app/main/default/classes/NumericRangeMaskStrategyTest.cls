@@ -1,5 +1,7 @@
 @IsTest
 private class NumericRangeMaskStrategyTest {
+    @TestSetup static void packagePermissions() { PrivacyGuardPackageTestAccess.grantAdmin(); }
+
     @IsTest static void generatesWholeNumbersWithinInclusiveBounds(){
         IMaskingStrategy strategy=MaskingStrategyFactory.getStrategy('NUMBER_RANGE',null);
         for(Integer i=0;i<100;i++){

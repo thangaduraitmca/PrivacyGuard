@@ -1,5 +1,7 @@
 @IsTest
 private class NullMaskStrategyTest {
+    @TestSetup static void packagePermissions() { PrivacyGuardPackageTestAccess.grantAdmin(); }
+
     private static MaskingConfigService.FieldConfig field(String api) {
         MaskingConfigService.FieldConfig f=new MaskingConfigService.FieldConfig();
         f.objectApiName='Contact'; f.fieldApiName=api; f.fieldType='NULL'; return f;

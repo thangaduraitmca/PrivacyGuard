@@ -2,6 +2,7 @@
 private class MaskingCompletionServiceTest {
     @TestSetup
     static void setupMaskingConfiguration() {
+        PrivacyGuardPackageTestAccess.grantAdmin();
         MaskingTestConfiguration.createDefaults();
     }
 

@@ -6,13 +6,20 @@
       "package": "PrivacyGuard",
       "versionName": "PrivacyGuard 0.1 Beta",
       "versionNumber": "0.1.0.NEXT",
-      "versionDescription": "Sandbox data masking with PII discovery, configurable masking strategies, job monitoring, and trigger deployment tracking."
+      "versionDescription": "Sandbox data masking with PII discovery, configurable masking strategies, job monitoring, and trigger deployment tracking.",
+      "apexTestAccess": {
+        "permissionSets": [
+          "PrivacyGuard_Admin"
+        ],
+        "permissionSetLicenses": []
+      }
     }
   ],
   "namespace": "privacyguard",
   "sourceApiVersion": "66.0",
   "packageAliases": {
     "PrivacyGuard": "0HoQE0000000GUb0AM",
-    "PrivacyGuard@0.1.0-4": "04tQE00000jQNgbYAG"
+    "PrivacyGuard@0.1.0-4": "04tQE00000jQNgbYAG",
+    "PrivacyGuard@0.1.0-5": "04tQE00000jQOMXYA4"
   }
 }

@@ -1,7 +1,8 @@
 /** Tests persisted runtime state, recovery scope and terminal-state idempotency. */
 @IsTest
 private class PrivacyGuardRuntimeLifecycleTest {
-    @TestSetup static void setup(){MaskingTestConfiguration.createDefaults();}
+    @TestSetup static void setup(){
+        PrivacyGuardPackageTestAccess.grantAdmin();MaskingTestConfiguration.createDefaults();}
     private static Masking_Job__c job(String mode) {
         Masking_Job__c j=new Masking_Job__c(Job_Name__c='Runtime regression',Run_Mode__c=mode,Execution_Mode__c='Serial',Batch_Size__c=200,Is_Active__c=true);
         insert j;return j;

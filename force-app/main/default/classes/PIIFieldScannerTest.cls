@@ -19,6 +19,8 @@
  */
 @isTest
 private with sharing class PIIFieldScannerTest {
+    @TestSetup static void packagePermissions() { PrivacyGuardPackageTestAccess.grantAdmin(); }
+
 
     @isTest
     static void testScanExcludesConfiguredFieldsAndStillFindsCandidates() {

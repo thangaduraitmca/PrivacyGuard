@@ -1,5 +1,7 @@
 @IsTest
 private class PrivacyGuardAuditTest {
+    @TestSetup static void packagePermissions() { PrivacyGuardPackageTestAccess.grantAdmin(); }
+
     private static PrivacyGuardAuditController.AuditPage page(String category) {
         return PrivacyGuardAuditController.load(category,'All',null,null,Date.today().addDays(-1),Date.today().addDays(1),null,null,null);
     }

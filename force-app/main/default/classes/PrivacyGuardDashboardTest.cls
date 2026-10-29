@@ -1,6 +1,8 @@
 /** Dashboard metrics describe configuration readiness, not compliance certification. */
 @IsTest
 private class PrivacyGuardDashboardTest {
+    @TestSetup static void packagePermissions() { PrivacyGuardPackageTestAccess.grantAdmin(); }
+
     @IsTest static void emptyDashboardIsNotAssessed() {
         Test.startTest();
         PrivacyGuardHomeController.Overview result = PrivacyGuardHomeController.getOverview();

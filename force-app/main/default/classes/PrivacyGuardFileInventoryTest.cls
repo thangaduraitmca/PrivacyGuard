@@ -1,6 +1,8 @@
 /** Inventory pagination, sharing metadata and read-only behaviour. */
 @IsTest
 private class PrivacyGuardFileInventoryTest {
+    @TestSetup static void packagePermissions() { PrivacyGuardPackageTestAccess.grantAdmin(); }
+
     @IsTest static void filesPageWithoutDuplicatesAndIncludeUserUploads() {
         List<ContentVersion> versions=new List<ContentVersion>();
         for(Integer i=0;i<101;i++) versions.add(new ContentVersion(Title='Inventory '+i,PathOnClient='inventory'+i+'.txt',VersionData=Blob.valueOf('Synthetic test document')));

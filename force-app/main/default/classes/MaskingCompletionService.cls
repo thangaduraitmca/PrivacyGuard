@@ -2,7 +2,7 @@
 public with sharing class MaskingCompletionService {
     public static String requireCheckbox(String objectApiName, String configuredField) {
         Schema.DescribeSObjectResult obj = SchemaValidationUtil.requireValidObject(objectApiName);
-        Map<String, Schema.SObjectField> fields = obj.fields.getMap();
+        Map<String, Schema.SObjectField> fields = PrivacyGuardSchema.fields(obj);
         String fieldName = configuredField;
         if (String.isBlank(fieldName)) {
             String packagedName = Contact.Data_Masking_Complete__c.getDescribe().getName();

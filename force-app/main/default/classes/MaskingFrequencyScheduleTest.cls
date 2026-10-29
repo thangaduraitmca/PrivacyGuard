@@ -2,6 +2,7 @@
 private class MaskingFrequencyScheduleTest {
     @TestSetup
     static void setupMaskingConfiguration() {
+        PrivacyGuardPackageTestAccess.grantAdmin();
         MaskingTestConfiguration.createDefaults();
     }
 

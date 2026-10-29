@@ -1,6 +1,8 @@
 /** Verifies persisted configuration and keyword lifecycle through public APIs. */
 @IsTest
 private class PrivacyGuardConfigLifecycleTest {
+    @TestSetup static void packagePermissions() { PrivacyGuardPackageTestAccess.grantAdmin(); }
+
     private static PrivacyGuardConfigurationController.FieldRow row(String field,String strategy,String pattern) {
         PrivacyGuardConfigurationController.FieldRow r=new PrivacyGuardConfigurationController.FieldRow();
         r.objectApiName='Contact';r.fieldApiName=field;r.strategy=strategy;r.pattern=pattern;r.active=true;return r;

@@ -1,7 +1,8 @@
 /** Verifies control-panel DTOs and job edits against persisted history. */
 @IsTest
 private class PrivacyGuardJobReportingTest {
-    @TestSetup static void setup(){MaskingTestConfiguration.createDefaults();}
+    @TestSetup static void setup(){
+        PrivacyGuardPackageTestAccess.grantAdmin();MaskingTestConfiguration.createDefaults();}
     @IsTest static void controllerCreatesEditsListsAndDeletesJobs() {
         Test.startTest();
         Id jobId=MaskingControlPanelController.saveJob(null,'Lifecycle','Initial','Once','Serial',100,null,'["Contact"]');

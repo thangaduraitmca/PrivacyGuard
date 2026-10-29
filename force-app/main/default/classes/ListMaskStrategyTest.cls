@@ -1,5 +1,7 @@
 @IsTest
 private class ListMaskStrategyTest {
+    @TestSetup static void packagePermissions() { PrivacyGuardPackageTestAccess.grantAdmin(); }
+
     @IsTest static void trimsDeduplicatesAndPicksOnlyConfiguredValues(){
         System.assertEquals(new List<String>{'Morgan','Jordan'},ListMaskStrategy.parseValues(' Morgan | Jordan | Morgan '));
         IMaskingStrategy strategy=MaskingStrategyFactory.getStrategy('LIST',null);

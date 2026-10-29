@@ -36,7 +36,7 @@ public with sharing class MaskingPreviewService {
         Set<String> names=new Set<String>{'Id'};
         for(MaskingConfigService.FieldConfig cfg:configs) {
             SchemaValidationUtil.validateMaskingTarget(obj,cfg);
-            Schema.DescribeFieldResult field=obj.fields.getMap().get(cfg.fieldApiName).getDescribe();
+            Schema.DescribeFieldResult field=PrivacyGuardSchema.fields(obj).get(cfg.fieldApiName).getDescribe();
             if(!field.isAccessible()) throw error('Preview requires read access to '+objectApiName+'.'+cfg.fieldApiName+'.');
             String kind=cfg.fieldType.toUpperCase();
             String builtIn=BUILT_INS.get(kind);
@@ -50,7 +50,7 @@ public with sharing class MaskingPreviewService {
         }
         String soql='SELECT '+String.join(new List<String>(names),',')+' FROM '+obj.getName();
         if(job.Run_Mode__c=='Once') {
-            if(!obj.fields.getMap().get(flag).getDescribe().isAccessible()) throw error('Read access to the completion checkbox is required for preview.');
+            if(!PrivacyGuardSchema.fields(obj).get(flag).getDescribe().isAccessible()) throw error('Read access to the completion checkbox is required for preview.');
             soql+=' WHERE '+flag+' = false';
         }
         // USER_MODE enforces sharing and field permissions, including the filter field.
@@ -67,9 +67,9 @@ public with sharing class MaskingPreviewService {
                 try {
                     if(!strategies.containsKey(i)) strategies.put(i,MaskingStrategyFactory.getStrategy(cfg.fieldType,null));
                     Object after=cfg.fieldType.equalsIgnoreCase('STATIC')
-                        ? SchemaValidationUtil.convertStaticMaskValue(obj.fields.getMap().get(cfg.fieldApiName).getDescribe(),cfg.maskingPattern)
+                        ? SchemaValidationUtil.convertStaticMaskValue(PrivacyGuardSchema.fields(obj).get(cfg.fieldApiName).getDescribe(),cfg.maskingPattern)
                         : strategies.get(i).maskValue(before,cfg.maskingPattern,cfg.fieldApiName);
-                    if(cfg.fieldType.equalsIgnoreCase('NUMBER_RANGE')) after=NumericRangeMaskStrategy.convertForField(obj.fields.getMap().get(cfg.fieldApiName).getDescribe(),after);
+                    if(cfg.fieldType.equalsIgnoreCase('NUMBER_RANGE')) after=NumericRangeMaskStrategy.convertForField(PrivacyGuardSchema.fields(obj).get(cfg.fieldApiName).getDescribe(),after);
                     row.afterValue=display(after);
                     row.outcome=before==null&&after==null?'Already empty':
                         (String.valueOf(before)==String.valueOf(after)?'Unchanged — review rule':'Changed');

@@ -56,7 +56,7 @@ public with sharing class PrivacyGuardAuditController {
         if(cursorTime!=null) q+=' AND (CreatedDate < :cursorTime OR (CreatedDate = :cursorTime AND Id < :cursorId))';
         q+=' WITH USER_MODE ORDER BY CreatedDate DESC,Id DESC LIMIT 101';
         AuditPage page=new AuditPage(); List<Masking_Log__c> logs;
-        try { logs=Database.query(q); }
+        try { logs=Database.query(PrivacyGuardSchema.qualifyQuery(Masking_Log__c.SObjectType,q)); }
         catch(Exception ex) {
             System.debug(LoggingLevel.ERROR,'PrivacyGuard Audit query failed: '+ex.getMessage());
             if(Test.isRunningTest())throw client('Audit query failed: '+ex.getMessage());

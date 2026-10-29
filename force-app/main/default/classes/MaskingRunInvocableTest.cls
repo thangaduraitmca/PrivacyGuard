@@ -16,6 +16,7 @@ private with sharing class MaskingRunInvocableTest {
 
     @testSetup
     static void setup() {
+        PrivacyGuardPackageTestAccess.grantAdmin();
         MaskingTestConfiguration.createDefaults();
         insert new Contact(LastName = 'OriginalLastName', Email = 'original@example.com', Phone = '415-555-0100');
         insert new Lead(LastName = 'OriginalLead', Company = 'RealCompanyName');

@@ -42,7 +42,7 @@ public with sharing class SchemaValidationUtil {
         if (String.isBlank(fieldApiName)) {
             throw new InvalidSchemaReferenceException('Field API name cannot be blank on ' + objDescribe.getName() + '.');
         }
-        Map<String, Schema.SObjectField> fieldsMap = objDescribe.fields.getMap();
+        Map<String, Schema.SObjectField> fieldsMap = PrivacyGuardSchema.fields(objDescribe);
         if (!fieldsMap.containsKey(fieldApiName.trim().toLowerCase())) {
             throw new InvalidSchemaReferenceException('Unknown field API name: ' + fieldApiName + ' on ' + objDescribe.getName());
         }
@@ -90,7 +90,8 @@ public with sharing class SchemaValidationUtil {
     /** Fail closed before a batch query starts. Custom strategies remain text-only until typed contracts exist. */
     public static void validateMaskingTarget(Schema.DescribeSObjectResult obj, MaskingConfigService.FieldConfig cfg) {
         requireValidField(obj, cfg.fieldApiName);
-        Schema.DescribeFieldResult d = obj.fields.getMap().get(cfg.fieldApiName).getDescribe();
+        cfg.fieldApiName=PrivacyGuardSchema.name(obj,cfg.fieldApiName);
+        Schema.DescribeFieldResult d = PrivacyGuardSchema.field(obj,cfg.fieldApiName).getDescribe();
         Schema.DisplayType t = d.getType();
         String strategy = String.isBlank(cfg.fieldType) ? '' : cfg.fieldType.trim().toUpperCase();
         Boolean textType = t == Schema.DisplayType.STRING || t == Schema.DisplayType.TEXTAREA ||

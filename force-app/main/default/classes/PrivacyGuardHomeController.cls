@@ -149,7 +149,7 @@ public with sharing class PrivacyGuardHomeController {
     // Resolve either local or namespace-qualified names from the actual org schema.
     // Managed-package describe maps can expose keys differently across contexts.
     private static String fieldName(Schema.SObjectType objectType, String localName) {
-        Map<String, Schema.SObjectField> fields = objectType.getDescribe().fields.getMap();
+        Map<String, Schema.SObjectField> fields = PrivacyGuardSchema.fields(objectType.getDescribe());
         String objectApi = objectType.getDescribe().getName();
         String namespacePrefix = '';
         Integer separator = objectApi.indexOf('__');

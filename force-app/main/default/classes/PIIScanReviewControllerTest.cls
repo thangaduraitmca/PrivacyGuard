@@ -20,6 +20,7 @@ private with sharing class PIIScanReviewControllerTest {
 
     @testSetup
     static void setup() {
+        PrivacyGuardPackageTestAccess.grantAdmin();
         insert new PII_Scan_Result__c(
             Object_API_Name__c = 'Contact',
             Field_API_Name__c = 'Fax',

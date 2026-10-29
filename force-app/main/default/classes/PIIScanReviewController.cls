@@ -156,7 +156,7 @@ public with sharing class PIIScanReviewController {
             }
             Schema.SObjectType objectType = Schema.getGlobalDescribe().get(objectApiName.trim());
             if (objectType == null) throw new IllegalArgumentException('Unknown Salesforce object: ' + objectApiName);
-            Schema.SObjectField fieldToken = objectType.getDescribe().fields.getMap().get(fieldApiName.trim());
+            Schema.SObjectField fieldToken = PrivacyGuardSchema.field(objectType.getDescribe(),fieldApiName.trim());
             if (fieldToken == null) throw new IllegalArgumentException('Unknown field ' + fieldApiName + ' on ' + objectApiName + '.');
             Schema.DescribeFieldResult d = fieldToken.getDescribe();
             String objectName = objectType.getDescribe().getName();

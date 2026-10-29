@@ -132,9 +132,11 @@ public without sharing class MaskingJobManagerService {
         requireWritableFields(child, new List<String>{'Masking_Job__c','Object_API_Name__c','Sequence__c','Is_Active__c','Delta_Tracking_Field__c'}, true);
     }
     private static void requireWritableFields(Schema.DescribeSObjectResult objectInfo, List<String> names, Boolean creating) {
-        Map<String, Schema.SObjectField> fields = objectInfo.fields.getMap();
+        Map<String, Schema.SObjectField> fields = PrivacyGuardSchema.fields(objectInfo);
         for (String name : names) {
-            Schema.DescribeFieldResult field = fields.get(name).getDescribe();
+            Schema.SObjectField token=fields.get(name);
+            if(token==null)throw client('Missing masking job field: '+name);
+            Schema.DescribeFieldResult field = token.getDescribe();
             if ((creating && !field.isCreateable()) || (!creating && !field.isUpdateable()))
                 throw client('You do not have permission to edit masking job field ' + field.getLabel() + '.');
         }

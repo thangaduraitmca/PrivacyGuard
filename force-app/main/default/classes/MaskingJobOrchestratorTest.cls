@@ -21,6 +21,7 @@ private with sharing class MaskingJobOrchestratorTest {
 
     @testSetup
     static void setup() {
+        PrivacyGuardPackageTestAccess.grantAdmin();
         MaskingTestConfiguration.createDefaults();
         insert new Contact(LastName = 'OriginalLastName', Email = 'contact@example.com', Phone = '415-555-0100');
         insert new Lead(LastName = 'OriginalLead', Company = 'RealCompanyName', Email = 'lead@example.com', Phone = '415-555-0200');
