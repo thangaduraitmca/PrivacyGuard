@@ -33,6 +33,7 @@ public with sharing class MaskingLogger {
 
     public static void queueLog(String jobName, String objectApiName, Id recordId, String fieldApiName, String message, String status) {
         pendingLogs.add(new Masking_Log__c(
+            Activity_Category__c = PrivacyGuardAuditService.categoryFor(jobName, objectApiName),
             Job_Name__c = jobName,
             Object_API_Name__c = objectApiName,
             Record_Id__c = recordId != null ? String.valueOf(recordId) : null,
@@ -42,6 +43,9 @@ public with sharing class MaskingLogger {
         ));
     }
 
+    public static void queueActivity(String category,String jobName,String objectApiName,Id recordId,String message,String status) {
+        pendingLogs.add(new Masking_Log__c(Activity_Category__c=category,Job_Name__c=jobName,Object_API_Name__c=objectApiName,Record_Id__c=String.valueOf(recordId),Error_Message__c=message,Status__c=status));
+    }
     public static void flush() {
         if (!pendingLogs.isEmpty()) {
             List<Masking_Log__c> toInsert = pendingLogs;
@@ -59,7 +63,8 @@ public with sharing class MaskingLogger {
     private static void insertLogNow(String jobName, String objectApiName, Id recordId, String fieldApiName, String message, String status) {
         try {
             insert new Masking_Log__c(
-                Job_Name__c = jobName,
+                Activity_Category__c = PrivacyGuardAuditService.categoryFor(jobName, objectApiName),
+            Job_Name__c = jobName,
                 Object_API_Name__c = objectApiName,
                 Record_Id__c = recordId != null ? String.valueOf(recordId) : null,
                 Field_API_Name__c = fieldApiName,
@@ -75,7 +80,7 @@ public with sharing class MaskingLogger {
 
     public static void queueDetailedLog(Id runId, String jobName, String objectApiName, Id recordId, String fieldApiName, String message, String status) {
         String category = categorize(message);
-        pendingLogs.add(new Masking_Log__c(Job_Name__c=jobName,Object_API_Name__c=objectApiName,Record_Id__c=recordId!=null?String.valueOf(recordId):null,Field_API_Name__c=fieldApiName,Error_Message__c=message,Status__c=status,Run_Id__c=runId!=null?String.valueOf(runId):null,Error_Category__c=category,Admin_Message__c=adminMessage(category,message),Suggested_Action__c=suggestedAction(category),Technical_Details__c=message));
+        pendingLogs.add(new Masking_Log__c(Activity_Category__c=PrivacyGuardAuditService.categoryFor(jobName,objectApiName),Job_Name__c=jobName,Object_API_Name__c=objectApiName,Record_Id__c=recordId!=null?String.valueOf(recordId):null,Field_API_Name__c=fieldApiName,Error_Message__c=message,Status__c=status,Run_Id__c=runId!=null?String.valueOf(runId):null,Error_Category__c=category,Admin_Message__c=adminMessage(category,message),Suggested_Action__c=suggestedAction(category),Technical_Details__c=message));
     }
     private static String categorize(String m){String x=m==null?'':m.toUpperCase();if(x.contains('FIELD_CUSTOM_VALIDATION_EXCEPTION'))return 'Validation Rule';if(x.contains('REQUIRED_FIELD_MISSING'))return 'Required Field';if(x.contains('UNABLE_TO_LOCK_ROW'))return 'Record Locked';if(x.contains('DUPLICATE'))return 'Duplicate Rule';if(x.contains('FLOW')||x.contains('PROCESS'))return 'Automation/Flow';if(x.contains('LIMIT'))return 'Governor Limit';if(x.contains('INSUFFICIENT_ACCESS'))return 'Permission';return 'Salesforce Error';}
     private static String adminMessage(String c,String m){return 'PrivacyGuard could not mask this record. Category: '+c+'. Review the affected object/field and the technical details before rerunning.';}

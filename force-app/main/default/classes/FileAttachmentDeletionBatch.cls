@@ -102,7 +102,7 @@ public without sharing class FileAttachmentDeletionBatch implements Database.Bat
                 for (Database.Error err : results[i].getErrors()) {
                     errors += err.getStatusCode() + ': ' + err.getMessage() + '; ';
                 }
-                MaskingLogger.queueLog(jobName, objectApiName, records[i].Id, null, 'Delete failed: ' + errors, 'Failed');
+                MaskingLogger.queueActivity('Files',jobName,objectApiName,records[i].Id,'Delete failed: '+errors,'Failed');
             }
         }
         MaskingLogger.flush();
@@ -110,9 +110,9 @@ public without sharing class FileAttachmentDeletionBatch implements Database.Bat
 
     public void finish(Database.BatchableContext bc) {
         String kind = (mode == MODE_ATTACHMENTS) ? 'Attachment' : 'File';
-        MaskingLogger.logInfo(jobName,
-            kind + ' deletion finished for ' + objectApiName +
-            '. Deleted: ' + recordsDeleted + ', Failed: ' + recordsFailed);
+        String summary=jobName+': '+kind+' deletion finished for '+objectApiName+'. Deleted: '+recordsDeleted+', Failed: '+recordsFailed;
+        if(recordsFailed>0)PrivacyGuardAuditService.recordFailure('Files','Deletion finished',null,summary);
+        else PrivacyGuardAuditService.record('Files','Deletion finished',null,summary);
         MaskingJobOrchestrator.handleJobCompletion(jobName);
     }
 }

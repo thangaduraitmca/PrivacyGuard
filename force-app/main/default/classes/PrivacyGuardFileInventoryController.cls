@@ -36,6 +36,7 @@ public with sharing class PrivacyGuardFileInventoryController {
         page.startedAt = startedAt == null ? System.now() : startedAt;
         if (kind == 'Files') readFiles(page, afterId);
         else readAttachments(page, afterId);
+        if(afterId==null) PrivacyGuardAuditService.record('Files','Inventory started',null,'Requested '+kind+' inventory. This entry does not certify completion.');
         return page;
     }
     public class DeleteOutcome {
@@ -71,12 +72,12 @@ public with sharing class PrivacyGuardFileInventoryController {
                 found.add(outcome.id); outcome.success = results[i].isSuccess();
                 outcome.message = outcome.success ? 'Deleted' : String.valueOf(results[i].getErrors()[0].getStatusCode()) + ': ' + results[i].getErrors()[0].getMessage();
                 outcomes.add(outcome);
-                audit.add(new Masking_Log__c(Job_Name__c='Selected_File_Deletion', Object_API_Name__c=String.valueOf(records[i].getSObjectType()), Record_Id__c=String.valueOf(outcome.id), Status__c=outcome.success?'Success':'Failed', Error_Message__c=outcome.message.left(255)));
+                audit.add(new Masking_Log__c(Job_Name__c='Selected_File_Deletion',Activity_Category__c='Files',Activity_Action__c='Delete', Object_API_Name__c=String.valueOf(records[i].getSObjectType()), Record_Id__c=String.valueOf(outcome.id), Status__c=outcome.success?'Success':'Failed', Error_Message__c=outcome.message.left(255)));
             }
             for (Id item : ids) if (!found.contains(item)) {
                 DeleteOutcome outcome = new DeleteOutcome(); outcome.id=item; outcome.success=false;
                 outcome.message='Item is no longer available or is not accessible.'; outcomes.add(outcome);
-                audit.add(new Masking_Log__c(Job_Name__c='Selected_File_Deletion',Record_Id__c=String.valueOf(item),Status__c='Failed',Error_Message__c=outcome.message));
+                audit.add(new Masking_Log__c(Job_Name__c='Selected_File_Deletion',Activity_Category__c='Files',Activity_Action__c='Delete',Record_Id__c=String.valueOf(item),Status__c='Failed',Error_Message__c=outcome.message));
             }
             // Audit is mandatory: a logging failure rolls back this request's deletions.
             insert audit;

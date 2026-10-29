@@ -11,7 +11,7 @@ const NAV = [
  {id:'keywords',label:'PII Keywords',icon:'utility:key'},
  {id:'automation',label:'Automation',icon:'utility:flow'},
  {id:'purge',label:'Attachment & File Manager',icon:'utility:file'},
- {id:'logs',label:'Audit Logs',icon:'utility:record'}
+ {id:'logs',label:'Audit Centre',icon:'utility:record'}
 ];
 export default class PrivacyGuardHome extends NavigationMixin(LightningElement) {
  activeSection = 'overview';

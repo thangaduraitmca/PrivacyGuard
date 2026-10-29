@@ -1,0 +1,1 @@
+<CustomPermission xmlns="http://soap.sforce.com/2006/04/metadata"><description>View operational logs and configuration change history in the PrivacyGuard Audit Centre.</description><isLicensed>false</isLicensed><label>View PrivacyGuard Audit</label></CustomPermission>

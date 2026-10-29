@@ -13,5 +13,5 @@
 <template lwc:elseif={isKeywords}><c-pii-keyword-configuration></c-pii-keyword-configuration></template>
 <template lwc:elseif={isAutomation}><c-automation-management></c-automation-management></template>
 <template lwc:elseif={isPurge}><c-attachment-file-purge></c-attachment-file-purge></template>
-<template lwc:elseif={isLogs}><div class="panel"><h2>Audit Logs</h2><p>View masking execution records in the existing Masking Logs Salesforce tab. The log viewer is backed by a Salesforce object, not an LWC, and needs a dedicated list component to be embedded here.</p><lightning-button label="Open Masking Logs" onclick={openLogs}></lightning-button></div></template>
+<template lwc:elseif={isLogs}><c-privacy-guard-audit-centre></c-privacy-guard-audit-centre></template>
 </main></div></template>

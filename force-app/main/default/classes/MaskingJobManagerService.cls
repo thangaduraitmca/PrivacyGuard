@@ -170,13 +170,14 @@ public without sharing class MaskingJobManagerService {
         // Existing scheduler class is retained for managed-package compatibility.
         // System.schedule uses the scheduling user's Salesforce timezone.
         System.schedule('PGSchedule_'+String.valueOf(jobId),cron,new PrivacyGuardWeeklyScheduler(jobId));
+        PrivacyGuardAuditService.record('Jobs','Schedule saved',jobId,'Frequency: '+frequency+'; cron: '+cron+'; timezone: '+UserInfo.getTimeZone().getID());
     }
     @AuraEnabled public static void cancelWeeklySchedule(Id jobId) {cancelJobSchedule(jobId);}
     @AuraEnabled public static void cancelJobSchedule(Id jobId) {
         PrivacyGuardSecurityService.requireRunPermission();
         if(jobId==null)return;
         Set<String> scheduleNames=new Set<String>{'PGWeekly_'+String.valueOf(jobId),'PGSchedule_'+String.valueOf(jobId)};
-        for(CronTrigger scheduled:[SELECT Id FROM CronTrigger WHERE CronJobDetail.Name IN :scheduleNames])System.abortJob(scheduled.Id);
+        for(CronTrigger scheduled:[SELECT Id,CronExpression,TimeZoneSidKey FROM CronTrigger WHERE CronJobDetail.Name IN :scheduleNames]) {System.abortJob(scheduled.Id); PrivacyGuardAuditService.record('Jobs','Schedule cancelled',jobId,'Cancelled schedule '+scheduled.Id+'; cron: '+scheduled.CronExpression+'; timezone: '+scheduled.TimeZoneSidKey);}
     }
     @AuraEnabled public static void cancelRunningJob(Id jobId) { RuntimeMaskingJobOrchestrator.cancel(jobId); }
     @AuraEnabled public static Id runJob(Id jobId){ PrivacyGuardSecurityService.requireRunPermission(); RuntimeMaskingJobOrchestrator.reconcile(jobId); validateJobReady(jobId); return RuntimeMaskingJobOrchestrator.start(jobId,false,null); }

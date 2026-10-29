@@ -101,6 +101,7 @@ public with sharing class AutomationManagementController {
             List<ApexTrigger> found=[SELECT Id, Name, Status, NamespacePrefix FROM ApexTrigger WHERE Id=:id LIMIT 1];
             if (found.isEmpty() || found[0].Status != 'Active') throw new AuraHandledException('Only active Apex Triggers can be deactivated. Rescan and try again.');
             ApexTrigger triggerRow=found[0];
+            if(PrivacyGuardAuditService.isProtectedTrigger(triggerRow.Name)) throw new AuraHandledException('PrivacyGuard audit triggers cannot be deactivated through Automation Management.');
             if (String.isNotBlank(triggerRow.NamespacePrefix)) throw new AuraHandledException('Namespaced triggers cannot be changed by PrivacyGuard: '+triggerRow.Name);
             assertNoPendingDeployment(id);
             insertTrack(runId,'APEX_TRIGGER',id,triggerRow.Name,'Active');
