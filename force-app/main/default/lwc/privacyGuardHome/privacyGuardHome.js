@@ -2,6 +2,7 @@ import { LightningElement, wire } from 'lwc';
 import { NavigationMixin } from 'lightning/navigation';
 import getOverview from '@salesforce/apex/PrivacyGuardHomeController.getOverview';
 import { refreshApex } from '@salesforce/apex';
+import MASKING_LOG_OBJECT from '@salesforce/schema/Masking_Log__c';
 const NAV = [
  {id:'overview',label:'Overview',icon:'utility:home'},
  {id:'discovery',label:'PII Discovery',icon:'utility:search'},
@@ -26,7 +27,7 @@ export default class PrivacyGuardHome extends NavigationMixin(LightningElement) 
  get isAutomation(){return this.activeSection==='automation';}
  get isPurge(){return this.activeSection==='purge';}
  get isLogs(){return this.activeSection==='logs';}
- openLogs(){this[NavigationMixin.Navigate]({type:'standard__objectPage',attributes:{objectApiName:'privacyguard__Masking_Log__c',actionName:'list'}});}
+ openLogs(){this[NavigationMixin.Navigate]({type:'standard__objectPage',attributes:{objectApiName:MASKING_LOG_OBJECT.objectApiName,actionName:'list'}});}
  async refresh(){this.loading=true;try{await refreshApex(this.wiredResult);}finally{this.loading=false;}}
  get dataWarning(){return this.data?.dataWarning;}
  get environmentName(){return this.data?.environmentName || 'Salesforce Sandbox';}

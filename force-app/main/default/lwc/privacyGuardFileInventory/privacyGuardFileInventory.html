@@ -1,0 +1,22 @@
+<template>
+    <section class="inventory">
+        <div class="header">
+            <div><h2>Files workspace</h2><p>Discover accessible files, export your inventory, and remove explicitly selected items in your sandbox.</p></div>
+            <div class="actions">
+                <lightning-button variant="brand" label="Scan All Accessible Files" onclick={scanAll} disabled={busy}></lightning-button>
+                <lightning-button label="Stop scan" onclick={stop} disabled={stopDisabled}></lightning-button>
+                <lightning-button label={downloadLabel} onclick={download} disabled={downloadDisabled}></lightning-button>
+            </div>
+        </div>
+        <p role="status" aria-live="polite">{statusText}</p>
+        <p class="scope">Visibility is determined by Salesforce permissions and file sharing. Other users' private files may be excluded. No visible record link does not prove a file is unused. Counts and metadata can change during scanning.</p>
+        <div class="metrics"><span>Salesforce Files: <strong>{fileCount}</strong></span><span>Legacy Attachments: <strong>{attachmentCount}</strong></span><span>Total bytes: <strong>{bytes}</strong></span></div>
+        <template if:true={hasWarnings}><div class="warnings"><strong>Report limitations</strong><ul><template for:each={warnings} for:item="warning"><li key={warning}>{warning}</li></template></ul></div></template>
+        <template if:true={hasRows}>
+            <div class="selection-bar"><strong>{selectedCount} selected</strong><lightning-button label="Select all collected" onclick={selectAll} disabled={busy}></lightning-button><lightning-button label="Clear selection" onclick={clearSelection} disabled={busy}></lightning-button><lightning-button variant="destructive" label="Delete selected" onclick={requestDelete} disabled={deleteDisabled}></lightning-button></div>
+        </template>
+        <template if:true={showConfirm}><div class="delete-confirm" role="region" aria-label="Confirm selected file deletion"><h3>Delete {selectedCount} selected items?</h3><p>Salesforce Files are deleted globally, including every version and all shared record links. Legacy Attachments are deleted from their parent. Review the names below. No permanent hard-delete is performed; recovery depends on Salesforce retention and permissions.</p><div class="confirm-list"><template for:each={confirmationRows} for:item="row"><p key={row.id}>{row.title} — {row.id}</p></template></div><lightning-input label="Type DELETE to confirm" value={confirmation} onchange={handleDeleteConfirmation} disabled={busy}></lightning-input><lightning-button label="Cancel" onclick={cancelDelete} disabled={busy}></lightning-button><lightning-button variant="destructive" label="Confirm deletion" onclick={confirmDelete} disabled={confirmDisabled}></lightning-button></div></template>
+        <template if:true={hasDeleteResults}><div class="results"><h3>Deletion results</h3><lightning-button label="Download deletion results" onclick={downloadResults} disabled={busy}></lightning-button><template for:each={deletionResults} for:item="result"><p key={result.id}>{result.id}: {result.message}</p></template></div></template>
+        <template if:true={hasRows}><p>Review the inventory below or export all collected items and relationships.</p><div class="preview"><lightning-datatable key-field="id" data={previewRows} columns={columns} selected-rows={selectedIds} onrowselection={handleSelection}></lightning-datatable></div></template>
+    </section>
+</template>

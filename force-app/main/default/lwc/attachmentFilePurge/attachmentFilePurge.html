@@ -1,19 +1,20 @@
 <template>
     <section class="pg-feature-hero"><div class="pg-header-copy"><span class="pg-header-icon pg-header-icon--cyan" aria-hidden="true"><lightning-icon icon-name="utility:file" size="medium" alternative-text=""></lightning-icon></span><div class="pg-header-text"><div class="pg-feature-eyebrow">PRIVACYGUARD • DATA LIFECYCLE</div><h1>Attachment &amp; File Manager</h1><p>Review and safely remove sandbox attachments and files.</p></div></div></section>
-    <div class="stepper"><span>1. Select Objects</span><span>2. Scan</span><span>3. Confirm</span><span>4. Purge</span></div>
+    <lightning-tabset variant="scoped"><lightning-tab label="All files"><c-privacy-guard-file-inventory></c-privacy-guard-file-inventory></lightning-tab><lightning-tab label="By object">
+    <p class="progress" role="status" aria-live="polite">{progress}</p><div class="stepper"><span>1. Select Objects</span><span>2. Scan</span><span>3. Confirm</span><span>4. Purge</span></div>
     <div class="layout">
         <section class="panel">
-            <h2>Select Salesforce Objects</h2><p class="hint">Choose up to 10 objects per scan. Only objects available to your user are listed.</p>
+            <h2>Select Salesforce Objects</h2><p class="hint">Select any number of accessible objects. Large selections are scanned in stages.</p>
             <lightning-input type="search" label="Search objects" value={search} onchange={handleSearch}></lightning-input>
-            <p class="selection">{selectedCount} selected</p>
+            <div class="selection"><strong>{selectedCount} selected</strong><lightning-button label="Select search results" onclick={selectFiltered} disabled={busy}></lightning-button><lightning-button label="Clear" onclick={clearObjects} disabled={busy}></lightning-button></div>
             <div class="object-list">
                 <template for:each={filteredObjects} for:item="obj">
-                    <div key={obj.value} class="object-row"><lightning-input type="checkbox" variant="label-hidden" label={obj.label} checked={obj.checked} data-name={obj.value} onchange={handleSelect}></lightning-input><span>{obj.label}</span><span class="api">{obj.value}</span></div>
+                    <div key={obj.value} class="object-row"><lightning-input type="checkbox" variant="label-hidden" label={obj.label} checked={obj.checked} data-name={obj.value} onchange={handleSelect} disabled={busy}></lightning-input><span>{obj.label}</span><span class="api">{obj.value}</span></div>
                 </template>
             </div>
         </section>
         <section class="panel">
-            <div class="panel-header"><div><h2>Scan Summary</h2><p class="hint">Counts are a snapshot and may change before the background job runs.</p></div><lightning-button variant="brand" label="Scan Selected Objects" disabled={scanDisabled} onclick={handleScan}></lightning-button></div>
+            <div class="panel-header"><div><h2>Scan Summary</h2><p class="hint">Counts are a snapshot and may change before the background job runs.</p></div><lightning-button variant="brand" label="Scan selection" disabled={scanDisabled} onclick={handleScan}></lightning-button></div>
             <div class="metrics"><div><small>Legacy Attachments</small><strong>{totalAttachments}</strong></div><div><small>File Links</small><strong>{totalFiles}</strong></div><div><small>Objects</small><strong>{selectedCount}</strong></div></div>
             <template if:true={scanned}>
                 <table class="summary"><thead><tr><th>Object</th><th>Attachments</th><th>File links</th><th>Scan status</th></tr></thead><tbody>
@@ -25,11 +26,12 @@
     </div>
     <section class="panel confirm"><h2>Review &amp; Confirm Purge</h2>
         <div class="options"><lightning-input type="checkbox" label="Delete legacy Attachments" checked={deleteAttachments} onchange={handleAttachments}></lightning-input><lightning-input type="checkbox" label="Delete Salesforce Files globally (ContentDocument)" checked={deleteFiles} onchange={handleFiles}></lightning-input></div>
-        <div class="warning"><strong>Permanent deletion:</strong> Deleting Salesforce Files removes the entire ContentDocument, including links from records outside the selected objects. File-link counts are not unique document counts. This action cannot be undone.</div>
+        <div class="warning"><strong>Global file deletion:</strong> Deleting Salesforce Files removes the entire ContentDocument, including links from records outside the selected objects. File-link counts are not unique document counts. All file versions are affected. Recovery depends on Salesforce retention and permissions; this does not perform a permanent hard-delete.</div>
         <template if:true={scanned}><p class="impact">Selected deletion scope: {totalItems} attachment records / file links (not unique file count).</p></template>
         <lightning-input type="checkbox" label="I understand the deletion scope and that the scan is a snapshot" checked={acknowledged} onchange={handleAcknowledge}></lightning-input>
         <lightning-input label="Type PURGE to confirm" value={confirmation} onchange={handleConfirmation}></lightning-input>
         <div class="actions"><lightning-button variant="destructive" label="Start Background Purge" disabled={purgeDisabled} onclick={handlePurge}></lightning-button></div>
     </section>
+    </lightning-tab></lightning-tabset>
     <template if:true={busy}><lightning-spinner alternative-text="Processing" size="medium"></lightning-spinner></template>
 </template>

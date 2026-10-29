@@ -9,6 +9,9 @@ export default class AttachmentFilePurge extends LightningElement {
     @track selected = [];
     @track scanRows = [];
     search = '';
+    progress = '';
+    selectFiltered() { this.selected = [...new Set([...this.selected, ...this.filteredObjects.map(row => row.value)])]; this.resetScan(); }
+    clearObjects() { this.selected = []; this.resetScan(); }
     deleteAttachments = true;
     deleteFiles = false;
     busy = false;
@@ -28,11 +31,11 @@ export default class AttachmentFilePurge extends LightningElement {
     get filteredObjects() {
         const term = this.search.toLowerCase();
         return this.objects.filter(o => o.label.toLowerCase().includes(term) || o.value.toLowerCase().includes(term))
-            .slice(0, 80).map(o => ({...o, checked: this.selected.includes(o.value)}));
+            .map(o => ({...o, checked: this.selected.includes(o.value)}));
     }
     get selectedCount() { return this.selected.length; }
     get hasSelection() { return this.selected.length > 0; }
-    get scanDisabled() { return this.busy || !this.hasSelection || this.selected.length > 10; }
+    get scanDisabled() { return this.busy || !this.hasSelection; }
     get totalAttachments() { return this.scanRows.reduce((s,r) => s + (r.attachmentCount || 0), 0); }
     get totalFiles() { return this.scanRows.reduce((s,r) => s + (r.fileLinkCount || 0), 0); }
     get totalItems() { return (this.deleteAttachments ? this.totalAttachments : 0) + (this.deleteFiles ? this.totalFiles : 0); }
@@ -43,11 +46,6 @@ export default class AttachmentFilePurge extends LightningElement {
     handleSearch(e) { this.search = e.detail.value || ''; }
     handleSelect(e) {
         const value = e.target.dataset.name;
-        if (e.target.checked && this.selected.length >= 10) {
-            e.target.checked = false;
-            this.toast('Selection limit', 'Select up to 10 objects.', 'warning');
-            return;
-        }
         this.selected = e.target.checked ? [...this.selected, value] : this.selected.filter(x => x !== value);
         this.resetScan();
     }
@@ -62,9 +60,13 @@ export default class AttachmentFilePurge extends LightningElement {
         const generation = this.scanGeneration;
         const selection = [...this.selected];
         try {
-            const rows = await scanObjects({objectApiNames: selection});
-            if (generation !== this.scanGeneration) return;
-            this.scanRows = [...(rows || [])];
+            for (let offset = 0; offset < selection.length; offset += 10) {
+                this.progress = `Scanning ${Math.min(offset + 10, selection.length)} of ${selection.length} objects`;
+                const rows = await scanObjects({objectApiNames: selection.slice(offset, offset + 10)});
+                if (generation !== this.scanGeneration) return;
+                this.scanRows = [...this.scanRows, ...(rows || [])];
+            }
+            this.progress = `Scan complete: ${selection.length} objects`;
             this.scanned = true;
             if (this.hasWarnings) this.toast('Scan incomplete', 'Some objects could not be counted. Purge is disabled.', 'warning');
         } catch (e) { if (generation === this.scanGeneration) this.toast('Scan failed', this.message(e), 'error'); }
@@ -74,8 +76,20 @@ export default class AttachmentFilePurge extends LightningElement {
         if (!this.canPurge) return;
         this.busy = true;
         try {
-            await purgeObjects({objectApiNames:this.selected, deleteAttachments:this.deleteAttachments, deleteFiles:this.deleteFiles});
-            this.toast('Purge submitted', 'Background purge was started. Review masking job logs for results.', 'success');
+            let submitted = 0;
+            for (const objectName of [...this.selected]) {
+                this.progress = `Submitting ${submitted + 1} of ${this.selected.length}: ${objectName}`;
+                try {
+                    await purgeObjects({objectApiNames:[objectName], deleteAttachments:this.deleteAttachments, deleteFiles:this.deleteFiles});
+                    submitted++;
+                } catch (error) {
+                    this.progress = `${submitted} object requests submitted; stopped at ${objectName}. Earlier requests may be running. Review job logs before retrying.`;
+                    this.resetScan();
+                    throw error;
+                }
+            }
+            this.progress = `${submitted} object requests submitted. Review background job logs for completion.`;
+            this.toast('Purge submitted', this.progress, 'success');
             this.resetScan();
         } catch (e) { this.toast('Purge failed', this.message(e), 'error'); }
         finally { this.busy = false; }
