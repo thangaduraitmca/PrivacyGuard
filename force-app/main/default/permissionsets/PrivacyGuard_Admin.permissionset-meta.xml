@@ -405,7 +405,7 @@
     <fieldPermissions><editable>true</editable><field>Masking_Job_Object__c.Is_Active__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>true</editable><field>Masking_Job_Object__c.Delta_Tracking_Field__c</field><readable>true</readable></fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
-    <label>PrivacyGuard Admin</label>
+    <label>PrivacyGuard Administrator</label>
     <objectPermissions>
         <object>Masking_Field_Config__c</object>
         <allowCreate>true</allowCreate>
@@ -485,6 +485,10 @@
     </tabSettings>
     <tabSettings>
         <tab>PII_Keyword_Configuration</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>PrivacyGuard_Home</tab>
         <visibility>Visible</visibility>
     </tabSettings>
 </PermissionSet>
