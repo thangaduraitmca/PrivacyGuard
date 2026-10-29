@@ -15,10 +15,15 @@
  * Exercises MaskingConfigService against the sample Masking_Configuration__mdt /
  * Masking_Job_Sequence__mdt records shipped with this package (Custom Metadata
  * records can't be inserted via DML in tests, so this validates against the
- * deployed sample data rather than fixtures created here).
+ * deployed job sequence plus test-owned runtime field configuration).
  */
 @isTest
 private with sharing class MaskingConfigServiceTest {
+    @TestSetup
+    static void setupMaskingConfiguration() {
+        MaskingTestConfiguration.createDefaults();
+    }
+
 
     @isTest
     static void testGetActiveFieldConfigsByObjectReturnsContactFields() {
@@ -26,7 +31,7 @@ private with sharing class MaskingConfigServiceTest {
         Map<String, List<MaskingConfigService.FieldConfig>> configs = MaskingConfigService.getActiveFieldConfigsByObject();
         Test.stopTest();
 
-        System.assert(configs.containsKey('Contact'), 'Sample package config should include Contact');
+        System.assert(configs.containsKey('Contact'), 'Test-owned active configuration should include Contact');
         List<MaskingConfigService.FieldConfig> contactFields = configs.get('Contact');
         System.assert(!contactFields.isEmpty());
 

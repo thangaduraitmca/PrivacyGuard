@@ -29,6 +29,8 @@
  */
 public with sharing class PIIFieldScannerBatch implements Database.Batchable<String>, Database.Stateful {
 
+    // Deterministic test inventory; inaccessible to production callers.
+    @TestVisible private static List<String> scannableObjectsForTests;
     private List<String> objectApiNames;
     private String scanBatchId;
 
@@ -66,6 +68,9 @@ public with sharing class PIIFieldScannerBatch implements Database.Batchable<Str
      * actually write to it), and not a Salesforce-managed system object.
      */
     public static List<String> getAllScannableObjects() {
+        if (Test.isRunningTest() && scannableObjectsForTests != null) {
+            return new List<String>(scannableObjectsForTests);
+        }
         List<String> result = new List<String>();
         for (Schema.SObjectType sobjType : Schema.getGlobalDescribe().values()) {
             Schema.DescribeSObjectResult d = sobjType.getDescribe();

@@ -1,5 +1,10 @@
 @IsTest
 private class MaskingFrequencyScheduleTest {
+    @TestSetup
+    static void setupMaskingConfiguration() {
+        MaskingTestConfiguration.createDefaults();
+    }
+
     private static Id createJob() {
         EnvironmentSafetyService.sandboxOverrideForTests=true;
         MaskingJobManagerService.JobInput input=new MaskingJobManagerService.JobInput();

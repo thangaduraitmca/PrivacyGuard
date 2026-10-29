@@ -12,7 +12,7 @@
  * 1.0.0       2026-09-16   PG-BASELINE-001    PrivacyGuard Engineering   Established managed-package audit and change-control baseline.
  */
 /**
- * End-to-end test: relies on the sample Masking_Configuration__mdt /
+ * End-to-end test: uses runtime field configurations from MaskingTestConfiguration and
  * Masking_Job_Sequence__mdt records shipped with this package (Contact.Email,
  * Contact.Phone, Contact.LastName / job "Mask_Contact").
  */
@@ -21,6 +21,7 @@ private with sharing class MaskingFrameworkIntegrationTest {
 
     @testSetup
     static void setup() {
+        MaskingTestConfiguration.createDefaults();
         insert new Contact(LastName = 'OriginalLastName', Email = 'original@example.com', Phone = '415-555-0100');
     }
 
@@ -52,43 +53,38 @@ private with sharing class MaskingFrameworkIntegrationTest {
     }
 
     @isTest
-    static void testDeltaModeSkipsAlreadyMaskedUntouchedRecords() {
-        EnvironmentSafetyService.sandboxOverrideForTests = true;
-        Contact untouched = [SELECT Id, LastName FROM Contact LIMIT 1];
-
+    static void testLegacyDeltaModeIsRejectedBeforeLaunchingBatch() {
         List<MaskingConfigService.FieldConfig> fields = MaskingConfigService.getActiveFieldConfigsByObject().get('Contact');
-
-        // First run: no delta tracking value yet, so the record qualifies and gets masked + stamped.
+        Boolean rejected = false;
         Test.startTest();
-        Database.executeBatch(new MaskingBatch('Mask_Contact_Test', 'Contact', fields, 'Delta', 'Data_Masking_Applied_Date__c'), 200);
+        try {
+            new MaskingBatch('Legacy_Delta', 'Contact', fields, 'Delta', 'Data_Masking_Applied_Date__c');
+        } catch (SchemaValidationUtil.InvalidSchemaReferenceException ex) {
+            rejected = true;
+            System.assert(ex.getMessage().contains('Delta'), 'The error must identify the unsupported mode.');
+            System.assert(ex.getMessage().contains('Unmasked records only'), 'The error must explain how to migrate the job.');
+        }
         Test.stopTest();
-
-        Contact afterFirstRun = [SELECT LastName, Data_Masking_Applied_Date__c FROM Contact WHERE Id = :untouched.Id];
-        System.assertNotEquals('OriginalLastName', afterFirstRun.LastName, 'Record should be masked on first delta run');
-        System.assertNotEquals(null, afterFirstRun.Data_Masking_Applied_Date__c, 'Tracking field should be stamped');
+        System.assert(rejected, 'Legacy Delta jobs must be rejected rather than silently masking a different record scope.');
+        Contact unchanged = [SELECT LastName, Data_Masking_Applied_Date__c FROM Contact LIMIT 1];
+        System.assertEquals('OriginalLastName', unchanged.LastName);
+        System.assertEquals(null, unchanged.Data_Masking_Applied_Date__c, 'Rejected jobs must not stamp a timestamp.');
     }
 
     @isTest
-    static void testDeltaModeRePicksUpExternallyModifiedRecord() {
+    static void testFullModeRemasksFlaggedRecordAfterExternalChange() {
         EnvironmentSafetyService.sandboxOverrideForTests = true;
         Contact original = [SELECT Id FROM Contact LIMIT 1];
-        original.Data_Masking_Applied_Date__c = System.now().addDays(-1);
-        update original;
-
-        // Simulate an external system re-populating real data after the last masking run -
-        // LastModifiedDate is now later than Data_Masking_Applied_Date__c.
+        original.Data_Masking_Complete__c = true;
         original.Email = 'reimported-real-data@example.com';
         update original;
-
         List<MaskingConfigService.FieldConfig> fields = MaskingConfigService.getActiveFieldConfigsByObject().get('Contact');
-
         Test.startTest();
-        Database.executeBatch(new MaskingBatch('Mask_Contact_Test', 'Contact', fields, 'Delta', 'Data_Masking_Applied_Date__c'), 200);
+        Database.executeBatch(new MaskingBatch('Full_Remask', 'Contact', fields, 'Full', 'Data_Masking_Complete__c'), 200);
         Test.stopTest();
-
-        Contact result = [SELECT Email FROM Contact WHERE Id = :original.Id];
-        System.assertNotEquals('reimported-real-data@example.com', result.Email,
-            'Record modified after its last masking timestamp should be re-masked');
+        Contact result = [SELECT Email, Data_Masking_Complete__c FROM Contact WHERE Id = :original.Id];
+        System.assertNotEquals('reimported-real-data@example.com', result.Email, 'Full mode must mask even an already flagged record.');
+        System.assertEquals(true, result.Data_Masking_Complete__c, 'Successful masking must preserve the completion flag.');
     }
 
     @isTest
@@ -141,13 +137,14 @@ private with sharing class MaskingFrameworkIntegrationTest {
         Test.startTest();
         try {
             // Data_Masking_Applied_Date__c is a DateTime field, but this job claims Once mode (expects Checkbox).
-            Database.executeBatch(new MaskingBatch('Mask_Contact_Bad_Config', 'Contact', fields, 'Once', 'Data_Masking_Applied_Date__c'), 200);
-            Test.stopTest();
+            new MaskingBatch('Mask_Contact_Bad_Config', 'Contact', fields, 'Once', 'Data_Masking_Applied_Date__c').start(null);
         } catch (SchemaValidationUtil.InvalidSchemaReferenceException e) {
             threw = true;
-            System.assert(e.getMessage().contains('Once'), 'Error should name the mismatched mode: ' + e.getMessage());
+            System.assert(e.getMessage().contains('Data_Masking_Applied_Date__c'), 'Error must identify the invalid field: ' + e.getMessage());
+            System.assert(e.getMessage().contains('editable Checkbox'), 'Error must state the required field type: ' + e.getMessage());
         }
 
+        Test.stopTest();
         System.assert(threw, 'A DateTime field configured for Once mode should fail fast with a clear error');
     }
 }

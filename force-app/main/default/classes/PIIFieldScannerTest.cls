@@ -54,11 +54,13 @@ private with sharing class PIIFieldScannerTest {
     @isTest
     static void testBatchInsertsFindingsAndSkipsUnknownObjects() {
         Test.startTest();
-        Database.executeBatch(new PIIFieldScannerBatch(new List<String>{ 'Contact', 'Not_A_Real_Object__x' }), 1);
+        Database.executeBatch(new PIIFieldScannerBatch(new List<String>{ 'Contact', 'Not_A_Real_Object__x' }), 2);
         Test.stopTest();
 
         List<PII_Scan_Result__c> results = [SELECT Id, Object_API_Name__c FROM PII_Scan_Result__c WHERE Object_API_Name__c = 'Contact'];
         System.assert(!results.isEmpty(), 'Expected scan results for Contact');
+        System.assertEquals(0, [SELECT COUNT() FROM PII_Scan_Result__c WHERE Object_API_Name__c='Not_A_Real_Object__x'],
+            'An unknown object must not produce findings.');
     }
 
     @isTest

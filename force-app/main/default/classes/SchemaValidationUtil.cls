@@ -136,7 +136,14 @@ public with sharing class SchemaValidationUtil {
             if (t == Schema.DisplayType.DOUBLE || t == Schema.DisplayType.INTEGER ||
                 t == Schema.DisplayType.CURRENCY || t == Schema.DisplayType.PERCENT) {
                 Decimal n = Decimal.valueOf(pattern);
-                if (t == Schema.DisplayType.INTEGER && n != n.setScale(0)) throw new InvalidSchemaReferenceException('Integer requires a whole number.');
+                if (t == Schema.DisplayType.INTEGER) {
+                    if (n != n.setScale(0)) throw new InvalidSchemaReferenceException('Integer requires a whole number.');
+                    if (n < Decimal.valueOf('-2147483648') || n > Decimal.valueOf('2147483647'))
+                        throw new InvalidSchemaReferenceException('Numeric value exceeds Integer bounds.');
+                    // Integer fields use signed 32-bit bounds; decimal precision metadata
+                    // is not a reliable capacity limit for standard integer fields.
+                    return n;
+                }
                 Integer scale = d.getScale();
                 Integer precision = d.getPrecision();
                 String digits = String.valueOf(n.abs());

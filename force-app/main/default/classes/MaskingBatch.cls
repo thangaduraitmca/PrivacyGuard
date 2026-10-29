@@ -84,6 +84,10 @@ public without sharing class MaskingBatch implements Database.Batchable<SObject>
         this.objectApiName = objectApiName;
         this.fieldConfigs = fieldConfigs;
         this.runMode = String.isBlank(runMode) ? MODE_FULL : runMode;
+        if (this.runMode.equalsIgnoreCase(MODE_DELTA)) {
+            throw new SchemaValidationUtil.InvalidSchemaReferenceException(
+                'Delta timestamp-based masking is no longer supported. Select Unmasked records only (Once) with an editable completion Checkbox, or Full.');
+        }
         this.trackingField = trackingField;
     }
 

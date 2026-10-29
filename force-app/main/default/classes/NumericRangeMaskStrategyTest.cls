@@ -50,4 +50,16 @@ private class NumericRangeMaskStrategyTest {
         for(MaskingPreviewService.PreviewRow row:preview.rows)if(row.fieldName=='NumberOfEmployees'){found=true;Decimal value=Decimal.valueOf(row.afterValue);System.assert(value>=100&&value<=999);}
         System.assert(found);System.assertEquals(5,[SELECT NumberOfEmployees FROM Account WHERE Id=:account.Id].NumberOfEmployees);
     }
+    @IsTest static void integerStaticConversionEnforcesActualBounds() {
+        Schema.DescribeFieldResult field=Account.NumberOfEmployees.getDescribe();
+        System.assertEquals(Decimal.valueOf('999'),SchemaValidationUtil.convertStaticMaskValue(field,'999'));
+        System.assertEquals(Decimal.valueOf('2147483647'),SchemaValidationUtil.convertStaticMaskValue(field,'2147483647'));
+        System.assertEquals(Decimal.valueOf('-2147483648'),SchemaValidationUtil.convertStaticMaskValue(field,'-2147483648'));
+        for (String invalidValue : new List<String>{'2147483648','-2147483649','1.5'}) {
+            Boolean blocked=false;
+            try {SchemaValidationUtil.convertStaticMaskValue(field,invalidValue);}
+            catch (SchemaValidationUtil.InvalidSchemaReferenceException ex) {blocked=true;}
+            System.assert(blocked,'Reject fractional or overflowing Integer value: '+invalidValue);
+        }
+    }
 }

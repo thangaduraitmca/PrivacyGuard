@@ -392,6 +392,18 @@
     <fieldPermissions><editable>false</editable><field>Deactivated_Automation__c.Deployment_Status__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>Deactivated_Automation__c.Deployment_Target__c</field><readable>true</readable></fieldPermissions>
     <fieldPermissions><editable>false</editable><field>Deactivated_Automation__c.Deployment_Message__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Masking_Job__c.Job_Name__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Masking_Job__c.Description__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Masking_Job__c.Run_Mode__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Masking_Job__c.Execution_Mode__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Masking_Job__c.Batch_Size__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Masking_Job__c.Is_Active__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Masking_Job__c.Last_Status__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Masking_Job_Object__c.Masking_Job__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Masking_Job_Object__c.Object_API_Name__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Masking_Job_Object__c.Sequence__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Masking_Job_Object__c.Is_Active__c</field><readable>true</readable></fieldPermissions>
+    <fieldPermissions><editable>true</editable><field>Masking_Job_Object__c.Delta_Tracking_Field__c</field><readable>true</readable></fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>PrivacyGuard Admin</label>
     <objectPermissions>

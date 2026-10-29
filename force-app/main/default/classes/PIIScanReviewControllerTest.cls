@@ -60,10 +60,16 @@ private with sharing class PIIScanReviewControllerTest {
 
     @isTest
     static void testRunScanReturnsJobId() {
+        PIIFieldScannerBatch.scannableObjectsForTests=new List<String>{'Contact'};
         Test.startTest();
         Id jobId = PIIScanReviewController.runScan();
         Test.stopTest();
         System.assertNotEquals(null, jobId);
+        AsyncApexJob job=[SELECT Status,NumberOfErrors FROM AsyncApexJob WHERE Id=:jobId];
+        System.assertEquals('Completed',job.Status);
+        System.assertEquals(0,job.NumberOfErrors);
+        System.assert([SELECT COUNT() FROM PII_Scan_Result__c WHERE Scan_Batch_Id__c=:jobId AND Object_API_Name__c='Contact'] > 0,
+            'The controller must submit a real batch that persists Contact findings.');
     }
 
     @isTest

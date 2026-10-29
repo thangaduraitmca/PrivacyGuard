@@ -1,5 +1,10 @@
 @IsTest
 private class MaskingCompletionServiceTest {
+    @TestSetup
+    static void setupMaskingConfiguration() {
+        MaskingTestConfiguration.createDefaults();
+    }
+
     private static List<MaskingConfigService.FieldConfig> config(String target, String value) {
         MaskingConfigService.FieldConfig f = new MaskingConfigService.FieldConfig();
         f.objectApiName='Contact'; f.fieldApiName=target; f.fieldType='STATIC'; f.maskingPattern=value;
