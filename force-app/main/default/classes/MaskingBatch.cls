@@ -224,6 +224,7 @@ public without sharing class MaskingBatch implements Database.Batchable<SObject>
 
         if (recordsToUpdate.isEmpty()) {
             MaskingLogger.flush();
+            persistRunProgress();
             return;
         }
 
@@ -250,6 +251,10 @@ public without sharing class MaskingBatch implements Database.Batchable<SObject>
             }
         }
         MaskingLogger.flush();
+        persistRunProgress();
+    }
+    private void persistRunProgress() {
+        if(runtimeRunObjectId!=null)update new Masking_Job_Run_Object__c(Id=runtimeRunObjectId,Processed_Records__c=recordsProcessed,Failed_Records__c=recordsFailed);
     }
 
     // Expose per-chunk counters for the log-driven recovery batch.

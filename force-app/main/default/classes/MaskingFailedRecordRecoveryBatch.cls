@@ -93,6 +93,7 @@ public without sharing class MaskingFailedRecordRecoveryBatch
         processor.execute(null, records);
         processed += processor.getProcessedCount();
         failed += processor.getFailedCount();
+        update new Masking_Job_Run_Object__c(Id=runtimeRunObjectId,Processed_Records__c=processed,Failed_Records__c=failed);
     }
 
     public void finish(Database.BatchableContext bc) {

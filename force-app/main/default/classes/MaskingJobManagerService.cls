@@ -19,6 +19,11 @@ public without sharing class MaskingJobManagerService {
         @AuraEnabled public String summary { get; set; }
     }
     public class RunObjectSummary {
+        @AuraEnabled public String asyncJobId {get;set;}
+        @AuraEnabled public String engineStatus {get;set;}
+        @AuraEnabled public Integer batchesDone {get;set;}
+        @AuraEnabled public Integer batchesTotal {get;set;}
+        @AuraEnabled public Integer engineErrors {get;set;}
         @AuraEnabled public Id id { get; set; }
         @AuraEnabled public String objectApiName { get; set; }
         @AuraEnabled public String status { get; set; }
@@ -221,13 +226,14 @@ public without sharing class MaskingJobManagerService {
 
         for (Masking_Job_Run_Object__c ro : [
             SELECT Id, Object_API_Name__c, Status__c, Processed_Records__c, Failed_Records__c,
-                   Started_At__c, Completed_At__c, Error_Summary__c
+                   Started_At__c, Completed_At__c, Error_Summary__c, Async_Job_Id__c
             FROM Masking_Job_Run_Object__c
             WHERE Masking_Job_Run__c = :r.Id
             ORDER BY Sequence__c
         ]) {
             RunObjectSummary os = new RunObjectSummary();
             os.id = ro.Id;
+            os.asyncJobId=ro.Async_Job_Id__c;
             os.objectApiName = ro.Object_API_Name__c;
             os.status = ro.Status__c;
             os.processed = ro.Processed_Records__c == null ? 0 : ro.Processed_Records__c;
@@ -238,6 +244,16 @@ public without sharing class MaskingJobManagerService {
             d.objects.add(os);
         }
 
+        Set<Id> asyncIds=new Set<Id>();
+        for(RunObjectSummary item:d.objects)if(String.isNotBlank(item.asyncJobId))asyncIds.add((Id)item.asyncJobId);
+        Map<Id,AsyncApexJob> engineJobs=new Map<Id,AsyncApexJob>([SELECT Id,Status,JobItemsProcessed,TotalJobItems,NumberOfErrors FROM AsyncApexJob WHERE Id IN :asyncIds]);
+        Decimal successful=0;Decimal failed=0;
+        for(RunObjectSummary item:d.objects) {
+            successful+=item.processed;failed+=item.failed;
+            AsyncApexJob engine=String.isBlank(item.asyncJobId)?null:engineJobs.get((Id)item.asyncJobId);
+            if(engine!=null){item.engineStatus=engine.Status;item.batchesDone=engine.JobItemsProcessed;item.batchesTotal=engine.TotalJobItems;item.engineErrors=engine.NumberOfErrors;}
+        }
+        if(!d.objects.isEmpty()){rs.processed=successful;rs.failed=failed;}
         String runtimeRunId = String.valueOf(r.Id);
         for (Masking_Log__c l : [
             SELECT Id, CreatedDate, Object_API_Name__c, Record_Id__c, Field_API_Name__c,

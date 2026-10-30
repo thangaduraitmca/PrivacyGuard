@@ -19,6 +19,26 @@ export default class MaskingControlPanel extends LightningElement {
  showPreview=false;previewJobId;previewObject='';previewOptions=[];previewRows=[];previewCount=0;previewError='';previewBusy=false;previewRequest=0;
  jobName='';description='';runMode='Once';executionMode='Serial';batchSize=200;
 
+ detailJobId; detailRunId;detailTimer;clockTimer;detailGeneration=0;detailBusy=false;detailError='';lastUpdated;clockNow=Date.now();
+ disconnectedCallback(){this.stopMonitor();}
+ stopMonitor(){this.detailBusy=false;this.detailGeneration++;clearTimeout(this.detailTimer);clearInterval(this.clockTimer);this.detailTimer=null;this.clockTimer=null;}
+ get runIsActive(){return ['Running','Queued','Processing','Preparing','Holding'].includes(this.runDetails?.run?.status);}
+ get durationLabel(){return this.duration(this.runDetails?.run?.startedAt,this.runDetails?.run?.completedAt);}
+ duration(start,end){if(!start)return '—';const seconds=Math.max(0,Math.floor(((end?new Date(end).getTime():this.clockNow)-new Date(start).getTime())/1000));const hours=Math.floor(seconds/3600),minutes=Math.floor(seconds%3600/60);return `${hours?hours+'h ':''}${minutes}m ${seconds%60}s`;}
+ get objectResults(){return (this.runDetails?.objects||[]).map(row=>{let fraction=0;const finished=['Completed','Partial','Failed','Skipped'].includes(row.status);if(finished)fraction=1;else if(row.batchesTotal>0)fraction=Math.min(1,Number(row.batchesDone||0)/Number(row.batchesTotal));const percent=Math.round(fraction*100);return {...row,percent,progressStyle:`width:${percent}%`,duration:this.duration(row.startedAt,row.completedAt),batchLabel:row.batchesTotal>0?`${row.batchesDone||0} / ${row.batchesTotal} batches`:(finished?'Processing finished':'Waiting for batch totals'),engineLabel:row.engineStatus||row.status};});}
+ get progressPercent(){const rows=this.objectResults;if(!rows.length)return 0;if(['Completed','Completed with Errors'].includes(this.runDetails?.run?.status))return 100;return Math.min(100,Math.floor(rows.reduce((sum,row)=>sum+row.percent,0)/rows.length));}
+ get progressStyle(){return `width:${this.progressPercent}%`;}
+ get objectCount(){return this.objectResults.length;}
+ get finishedObjectCount(){return this.objectResults.filter(row=>['Completed','Partial','Failed','Skipped'].includes(row.status)).length;}
+ get activeObjects(){return this.objectResults.filter(row=>row.status==='Running').map(row=>row.objectApiName).join(', ')||(this.runIsActive?'Waiting for execution':'None');}
+ get successfulCount(){return Number(this.runDetails?.run?.processed||0);}
+ get failedCount(){return Number(this.runDetails?.run?.failed||0);}
+ get attemptedCount(){return this.successfulCount+this.failedCount;}
+ get throughput(){if(!this.runDetails?.run?.startedAt)return '—';const seconds=((this.runDetails.run.completedAt?new Date(this.runDetails.run.completedAt).getTime():this.clockNow)-new Date(this.runDetails.run.startedAt).getTime())/1000;return seconds>0?`${Math.round(this.successfulCount/seconds).toLocaleString()} records/sec`:'—';}
+ get hasRunProblems(){return this.failedCount>0||['Failed','Cancelled','Completed with Errors'].includes(this.runDetails?.run?.status)||this.objectResults.some(row=>row.errorSummary||Number(row.engineErrors||0)>0||['Failed','Partial','Cancelled'].includes(row.status));}
+ get errorEmptyMessage(){return this.hasRunProblems?'No record-level error log was captured. Review the object error summary and Apex job for details.':this.runIsActive?'No errors reported so far.':'No errors reported.';}
+ get monitorLabel(){return this.runIsActive?'Live · refreshes every 5 seconds':'Run finished';}
+ async refreshRun(){clearTimeout(this.detailTimer);if(this.detailBusy||!this.detailJobId)return;const generation=this.detailGeneration;this.detailBusy=true;this.detailError='';try{const result=await getLatestRun({jobId:this.detailJobId});if(generation!==this.detailGeneration)return;if(this.detailRunId&&result.run?.id!==this.detailRunId){this.detailError='A newer run exists. Close this dashboard and open Run Details to view it.';this.stopMonitor();return;}this.runDetails=result;this.detailRunId=result.run?.id;this.clockNow=Date.now();this.lastUpdated=new Date().toLocaleTimeString();}catch(error){if(generation===this.detailGeneration)this.detailError=this.msg(error);}finally{if(generation===this.detailGeneration){this.detailBusy=false;if(this.showDetails&&this.runIsActive)this.detailTimer=setTimeout(()=>this.refreshRun(),5000);}}}
  connectedCallback(){this.refresh();}
  async refresh(){
   this.isLoading=true;
@@ -129,8 +149,9 @@ export default class MaskingControlPanel extends LightningElement {
   const id=this.pendingRunId,recovery=this.pendingRunRecovery;
   this.closeRunReview();await this.execute(id,recovery);
  }
- async execute(id,recovery){this.isLoading=true;try{recovery?await rerunJob({jobId:id}):await runJob({jobId:id});await this.refresh();this.toast(recovery?'Recovery rerun started':'Masking job started',recovery?'Only records recorded as failed in the previous run will be retried.':'The job is running in the background.','success');}catch(e){this.toast('Could not start job',this.msg(e),'error');}finally{this.isLoading=false;}}
- async openLogs(id){this.isLoading=true;try{this.runDetails=await getLatestRun({jobId:id});this.showDetails=true;}catch(e){this.toast('Could not load run details',this.msg(e),'error');}finally{this.isLoading=false;}}
- closeDetails(){this.showDetails=false;} get runModeOptions(){return[{label:'Full Masking',value:'Full'},{label:'Unmasked records only',value:'Once'}];} get executionOptions(){return[{label:'Serial',value:'Serial'},{label:'Parallel',value:'Parallel'}];}
+ async execute(id,recovery){this.isLoading=true;let started=false;try{recovery?await rerunJob({jobId:id}):await runJob({jobId:id});started=true;await this.refresh();this.toast(recovery?'Recovery rerun started':'Masking job started','Follow progress in the live run dashboard.','success');}catch(e){this.toast('Could not start job',this.msg(e),'error');}finally{this.isLoading=false;}if(started)await this.openLogs(id);}
+ async openLogs(id){this.stopMonitor();this.detailJobId=id;this.detailRunId=null;this.runDetails={run:null,objects:[],logs:[]};this.showDetails=true;this.detailError='';this.clockNow=Date.now();this.clockTimer=setInterval(()=>{this.clockNow=Date.now();},1000);await this.refreshRun();}
+ closeDetails(){this.showDetails=false;this.stopMonitor();this.detailJobId=null;this.detailRunId=null;}
+ get runModeOptions(){return[{label:'Full Masking',value:'Full'},{label:'Unmasked records only',value:'Once'}];} get executionOptions(){return[{label:'Serial',value:'Serial'},{label:'Parallel',value:'Parallel'}];}
  msg(e){return e?.body?.message||e?.message||'Unexpected error';} toast(title,message,variant){this.dispatchEvent(new ShowToastEvent({title,message,variant,mode:variant==='error'?'sticky':'dismissable'}));}
 }
