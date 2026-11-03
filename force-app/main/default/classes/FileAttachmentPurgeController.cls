@@ -107,12 +107,13 @@ public with sharing class FileAttachmentPurgeController {
         for (String apiName : objectApiNames) {
             try {
                 requireEligibleObject(apiName);
+                String canonical = Schema.getGlobalDescribe().get(apiName).getDescribe().getName();
                 ScanRow row = new ScanRow();
                 row.objectName = apiName;
                 row.attachmentCount = Database.countQuery(
-                    'SELECT count() FROM Attachment WHERE ParentId IN (SELECT Id FROM ' + apiName + ')');
+                    'SELECT count() FROM Attachment WHERE ParentId IN (SELECT Id FROM ' + canonical + ') WITH USER_MODE');
                 row.fileLinkCount = Database.countQuery(
-                    'SELECT count() FROM ContentDocumentLink WHERE LinkedEntityId IN (SELECT Id FROM ' + apiName + ')');
+                    'SELECT count() FROM ContentDocumentLink WHERE LinkedEntityId IN (SELECT Id FROM ' + canonical + ') WITH USER_MODE');
                 rows.add(row);
             } catch (Exception e) {
                 ScanRow row = new ScanRow();

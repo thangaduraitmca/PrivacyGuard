@@ -16,6 +16,7 @@ private with sharing class AutomationManagerServiceTest {
 
     @isTest
     static void testDisableAllAutomationsSetsAllFlags() {
+        EnvironmentSafetyService.sandboxOverrideForTests=true;
         Test.startTest();
         AutomationManagerService.disableAllAutomations();
         Test.stopTest();
@@ -29,6 +30,7 @@ private with sharing class AutomationManagerServiceTest {
 
     @isTest
     static void testEnableAllAutomationsClearsAllFlags() {
+        EnvironmentSafetyService.sandboxOverrideForTests=true;
         AutomationManagerService.disableAllAutomations();
 
         Test.startTest();
@@ -44,6 +46,7 @@ private with sharing class AutomationManagerServiceTest {
 
     @isTest
     static void testDefaultDoesNotAttemptMetadataDeactivationOrMakeCallouts() {
+        EnvironmentSafetyService.sandboxOverrideForTests=true;
         // Use_Metadata_Deactivation__c defaults false - disableAllAutomations() should
         // succeed with zero callouts (no mock registered; a callout attempt here would throw).
         Test.startTest();

@@ -1,5 +1,5 @@
 /** Runtime job manager for PrivacyGuard masking jobs. */
-public without sharing class MaskingJobManagerService {
+public with sharing class MaskingJobManagerService {
     public class JobRow { @AuraEnabled public String scheduleCron { get; set; } @AuraEnabled public String scheduleStatus { get; set; } @AuraEnabled public Datetime nextScheduledRun { get; set; } @AuraEnabled public Id id { get; set; } @AuraEnabled public String name { get; set; } @AuraEnabled public String description { get; set; } @AuraEnabled public String runMode { get; set; } @AuraEnabled public String executionMode { get; set; } @AuraEnabled public Boolean active { get; set; } @AuraEnabled public String objects { get; set; } @AuraEnabled public Integer objectCount { get; set; } @AuraEnabled public String lastStatus { get; set; } @AuraEnabled public Datetime lastRunAt { get; set; } @AuraEnabled public Boolean canRerun { get; set; } @AuraEnabled public Boolean canCancel { get; set; } @AuraEnabled public Integer batchSize { get; set; } @AuraEnabled public Boolean configurationReady { get; set; } @AuraEnabled public String configurationIssue { get; set; } }
     public class ObjectOption { @AuraEnabled public String value { get; set; } @AuraEnabled public String label { get; set; } @AuraEnabled public Integer fieldCount { get; set; } @AuraEnabled public Integer activeFieldCount { get; set; } @AuraEnabled public Boolean ready { get; set; } }
     public class JobInput { @AuraEnabled public Id id { get; set; } @AuraEnabled public String name { get; set; } @AuraEnabled public String description { get; set; } @AuraEnabled public String runMode { get; set; } @AuraEnabled public String executionMode { get; set; } @AuraEnabled public Integer batchSize { get; set; } @AuraEnabled public List<String> objects { get; set; } }
@@ -53,6 +53,7 @@ public without sharing class MaskingJobManagerService {
     }
 
     @AuraEnabled(cacheable=true) public static List<ObjectOption> getConfiguredObjects() {
+        PrivacyGuardSecurityService.requireRunPermission();
         // The Data Masking Configuration object is the source of truth for the Job Manager.
         // Return EVERY object present there, not only objects that currently have active fields.
         Map<String, Integer> totalByObject = new Map<String, Integer>();
@@ -61,6 +62,7 @@ public without sharing class MaskingJobManagerService {
             SELECT Object_API_Name__c, Is_Active__c, Masking_Strategy__c
             FROM Masking_Field_Config__c
             WHERE Object_API_Name__c != null
+            WITH USER_MODE
             ORDER BY Object_API_Name__c
         ]) {
             String api = cfg.Object_API_Name__c;
@@ -85,13 +87,14 @@ public without sharing class MaskingJobManagerService {
     }
     @AuraEnabled public static List<JobRow> getJobs() {
         PrivacyGuardSecurityService.requireRunPermission();
-        for (Masking_Job__c active : [SELECT Id FROM Masking_Job__c WHERE Last_Status__c = 'Running']) RuntimeMaskingJobOrchestrator.reconcile(active.Id);
+        for (Masking_Job__c active : [SELECT Id FROM Masking_Job__c WHERE Last_Status__c = 'Running' WITH USER_MODE ]) RuntimeMaskingJobOrchestrator.reconcile(active.Id);
         List<JobRow> out=new List<JobRow>();
         Map<String, CronTrigger> scheduleByName = new Map<String, CronTrigger>();
-        for (CronTrigger ct : [SELECT Id, CronJobDetail.Name, NextFireTime, State, CronExpression FROM CronTrigger WHERE (CronJobDetail.Name LIKE 'PGWeekly_%' OR CronJobDetail.Name LIKE 'PGSchedule_%') AND State NOT IN ('DELETED','COMPLETE')]) {
+        for (CronTrigger ct : [SELECT Id, CronJobDetail.Name, NextFireTime, State, CronExpression FROM CronTrigger WHERE (CronJobDetail.Name LIKE 'PGWeekly_%' OR CronJobDetail.Name LIKE 'PGSchedule_%') AND State NOT IN ('DELETED','COMPLETE') WITH USER_MODE ]) {
             scheduleByName.put(ct.CronJobDetail.Name, ct);
         }
-        for(Masking_Job__c j:[SELECT Id,Job_Name__c,Description__c,Run_Mode__c,Execution_Mode__c,Batch_Size__c,Is_Active__c,Last_Status__c,Last_Run_At__c,(SELECT Object_API_Name__c,Sequence__c FROM Job_Objects__r WHERE Is_Active__c=true ORDER BY Sequence__c) FROM Masking_Job__c ORDER BY CreatedDate DESC]){
+        Set<String> runnableObjects = MaskingConfigService.getActiveFieldConfigsByObject().keySet();
+        for(Masking_Job__c j:[SELECT Id,Job_Name__c,Description__c,Run_Mode__c,Execution_Mode__c,Batch_Size__c,Is_Active__c,Last_Status__c,Last_Run_At__c,(SELECT Object_API_Name__c,Sequence__c FROM Job_Objects__r WHERE Is_Active__c=true ORDER BY Sequence__c) FROM Masking_Job__c WITH USER_MODE ORDER BY CreatedDate DESC]){
             JobRow r=new JobRow(); r.id=j.Id;r.name=j.Job_Name__c;r.description=j.Description__c;r.runMode=j.Run_Mode__c;r.executionMode=j.Execution_Mode__c;r.batchSize=(Integer)j.Batch_Size__c;r.active=j.Is_Active__c;r.lastStatus=j.Last_Status__c;r.lastRunAt=j.Last_Run_At__c;
             List<String> os=new List<String>(); for(Masking_Job_Object__c x:j.Job_Objects__r)os.add(x.Object_API_Name__c); r.objects=String.join(os,', ');r.objectCount=os.size();r.canRerun=(j.Last_Status__c=='Failed'||j.Last_Status__c=='Completed with Errors');r.canCancel=j.Last_Status__c=='Running';
             CronTrigger ct = scheduleByName.get('PGSchedule_' + String.valueOf(j.Id));
@@ -99,7 +102,6 @@ public without sharing class MaskingJobManagerService {
             r.scheduleCron = ct == null ? null : ct.CronExpression;
             r.scheduleStatus = ct == null ? 'Manual' : ct.State;
             r.nextScheduledRun = ct == null ? null : ct.NextFireTime;
-            Set<String> runnableObjects = MaskingConfigService.getActiveFieldConfigsByObject().keySet();
             List<String> notReady = new List<String>();
             for (String objectApi : os) if (!runnableObjects.contains(objectApi)) notReady.add(objectApi);
             for (String objectApi : os) { String issue = MaskingCompletionService.configurationIssue(objectApi); if (issue != null) notReady.add(issue); }
@@ -113,17 +115,22 @@ public without sharing class MaskingJobManagerService {
         requireJobWriteAccess(input.id == null);
         if (input.runMode != null && input.runMode != 'Full' && input.runMode != 'Once') throw client('Choose Full or Unmasked records only. Timestamp Delta mode is no longer offered.');
         for (String o : input.objects) MaskingCompletionService.requireCheckbox(o, null);
-        if (input.id != null && ![SELECT Id FROM Masking_Job_Run__c WHERE Masking_Job__c=:input.id AND Status__c='Running' LIMIT 1].isEmpty()) throw client('Wait for the active run to finish before editing this job.');
+        if (input.id != null && ![SELECT Id FROM Masking_Job_Run__c WHERE Masking_Job__c=:input.id AND Status__c='Running' WITH USER_MODE LIMIT 1].isEmpty()) throw client('Wait for the active run to finish before editing this job.');
         Set<String> configured=MaskingConfigService.getActiveFieldConfigsByObject().keySet(); for(String o:input.objects) if(!configured.contains(o)) throw client(o+' does not have an active masking configuration.');
         Masking_Job__c j=input.id==null?new Masking_Job__c():[SELECT Id FROM Masking_Job__c WHERE Id=:input.id WITH USER_MODE]; j.Job_Name__c=input.name.trim();j.Description__c=input.description;j.Run_Mode__c=String.isBlank(input.runMode)?'Once':input.runMode;j.Execution_Mode__c=String.isBlank(input.executionMode)?'Serial':input.executionMode;j.Batch_Size__c=input.batchSize==null?200:input.batchSize;j.Is_Active__c=true; if(input.id==null){j.Last_Status__c='Draft'; insert as user j;} else update as user j;
-        if(input.id!=null) { List<Masking_Job_Object__c> existing=[SELECT Id FROM Masking_Job_Object__c WHERE Masking_Job__c=:j.Id]; delete as user existing; } List<Masking_Job_Object__c> rows=new List<Masking_Job_Object__c>(); Integer seq=1; for(String o:input.objects)rows.add(new Masking_Job_Object__c(Masking_Job__c=j.Id,Object_API_Name__c=o,Sequence__c=seq++,Is_Active__c=true,Delta_Tracking_Field__c=MaskingCompletionService.requireCheckbox(o,null))); insert as user rows; return j.Id;
+        if(input.id!=null) { List<Masking_Job_Object__c> existing=[SELECT Id FROM Masking_Job_Object__c WHERE Masking_Job__c=:j.Id WITH USER_MODE ]; delete as user existing; } List<Masking_Job_Object__c> rows=new List<Masking_Job_Object__c>(); Integer seq=1; for(String o:input.objects)rows.add(new Masking_Job_Object__c(Masking_Job__c=j.Id,Object_API_Name__c=o,Sequence__c=seq++,Is_Active__c=true,Delta_Tracking_Field__c=MaskingCompletionService.requireCheckbox(o,null))); insert as user rows; return j.Id;
     }
     @AuraEnabled public static void deleteJob(Id jobId){
         PrivacyGuardSecurityService.requireRunPermission();
         if (!Schema.sObjectType.Masking_Job__c.isDeletable()) throw client('You do not have permission to delete masking jobs.');
-        Masking_Job__c job=[SELECT Id FROM Masking_Job__c WHERE Id=:jobId WITH USER_MODE];
-        delete as user job;
+        Masking_Job__c job=[SELECT Id FROM Masking_Job__c WHERE Id=:jobId WITH USER_MODE FOR UPDATE];
+        if (![SELECT Id FROM Masking_Job_Run__c WHERE Masking_Job__c=:jobId
+            AND Status__c='Running' WITH USER_MODE LIMIT 1].isEmpty()) {
+            throw client('Wait for the active run to finish before deleting this job.');
+        }
+        // Resolve and cancel the schedule while the authorized parent still exists.
         cancelWeeklySchedule(jobId);
+        delete as user job;
     }
     private static void requireJobWriteAccess(Boolean creating) {
         Schema.DescribeSObjectResult job = Masking_Job__c.SObjectType.getDescribe();
@@ -170,7 +177,7 @@ public without sharing class MaskingJobManagerService {
         EnvironmentSafetyService.assertExecutionAllowed();
         if(jobId==null)throw client('Select a masking job.');
         String cron=buildScheduleCron(frequency,dayOfWeek,monthDay,localTime);
-        List<Masking_Job__c> jobs=[SELECT Id,Is_Active__c FROM Masking_Job__c WHERE Id=:jobId LIMIT 1 FOR UPDATE];
+        List<Masking_Job__c> jobs=[SELECT Id,Is_Active__c FROM Masking_Job__c WHERE Id=:jobId WITH USER_MODE LIMIT 1 FOR UPDATE];
         if(jobs.isEmpty()||!jobs[0].Is_Active__c)throw client('Job not found or inactive.');
         validateJobReady(jobId);
         cancelJobSchedule(jobId);
@@ -183,15 +190,18 @@ public without sharing class MaskingJobManagerService {
     @AuraEnabled public static void cancelJobSchedule(Id jobId) {
         PrivacyGuardSecurityService.requireRunPermission();
         if(jobId==null)return;
+        List<Masking_Job__c> visibleJobs=[SELECT Id FROM Masking_Job__c
+            WHERE Id=:jobId WITH USER_MODE LIMIT 1];
+        if (visibleJobs.isEmpty()) throw client('Job not found or unavailable.');
         Set<String> scheduleNames=new Set<String>{'PGWeekly_'+String.valueOf(jobId),'PGSchedule_'+String.valueOf(jobId)};
-        for(CronTrigger scheduled:[SELECT Id,CronExpression,TimeZoneSidKey FROM CronTrigger WHERE CronJobDetail.Name IN :scheduleNames]) {System.abortJob(scheduled.Id); PrivacyGuardAuditService.record('Jobs','Schedule cancelled',jobId,'Cancelled schedule '+scheduled.Id+'; cron: '+scheduled.CronExpression+'; timezone: '+scheduled.TimeZoneSidKey);}
+        for(CronTrigger scheduled:[SELECT Id,CronExpression,TimeZoneSidKey FROM CronTrigger WHERE CronJobDetail.Name IN :scheduleNames WITH USER_MODE ]) {System.abortJob(scheduled.Id); PrivacyGuardAuditService.record('Jobs','Schedule cancelled',jobId,'Cancelled schedule '+scheduled.Id+'; cron: '+scheduled.CronExpression+'; timezone: '+scheduled.TimeZoneSidKey);}
     }
     @AuraEnabled public static void cancelRunningJob(Id jobId) { RuntimeMaskingJobOrchestrator.cancel(jobId); }
     @AuraEnabled public static Id runJob(Id jobId){ PrivacyGuardSecurityService.requireRunPermission(); RuntimeMaskingJobOrchestrator.reconcile(jobId); validateJobReady(jobId); return RuntimeMaskingJobOrchestrator.start(jobId,false,null); }
     @AuraEnabled public static Id rerunJob(Id jobId){
         PrivacyGuardSecurityService.requireRunPermission();
         RuntimeMaskingJobOrchestrator.reconcile(jobId); validateJobReady(jobId);
-        Masking_Job_Run__c prev=[SELECT Id,Status__c FROM Masking_Job_Run__c WHERE Masking_Job__c=:jobId ORDER BY CreatedDate DESC LIMIT 1]; if(prev.Status__c!='Failed'&&prev.Status__c!='Completed with Errors') throw client('Rerun is available only when the previous run failed or completed with errors.'); return RuntimeMaskingJobOrchestrator.start(jobId,true,prev.Id);
+        Masking_Job_Run__c prev=[SELECT Id,Status__c FROM Masking_Job_Run__c WHERE Masking_Job__c=:jobId WITH USER_MODE ORDER BY CreatedDate DESC LIMIT 1]; if(prev.Status__c!='Failed'&&prev.Status__c!='Completed with Errors') throw client('Rerun is available only when the previous run failed or completed with errors.'); return RuntimeMaskingJobOrchestrator.start(jobId,true,prev.Id);
     }
     @AuraEnabled
     public static RunDetails getLatestRun(Id jobId) {
@@ -205,8 +215,7 @@ public without sharing class MaskingJobManagerService {
             SELECT Id, Name, Run_Type__c, Status__c, Started_At__c, Completed_At__c,
                    Processed_Records__c, Failed_Records__c, Summary__c
             FROM Masking_Job_Run__c
-            WHERE Masking_Job__c = :jobId
-            ORDER BY CreatedDate DESC
+            WHERE Masking_Job__c = :jobId WITH USER_MODE ORDER BY CreatedDate DESC
             LIMIT 1
         ];
         if (rr.isEmpty()) return d;
@@ -228,8 +237,7 @@ public without sharing class MaskingJobManagerService {
             SELECT Id, Object_API_Name__c, Status__c, Processed_Records__c, Failed_Records__c,
                    Started_At__c, Completed_At__c, Error_Summary__c, Async_Job_Id__c
             FROM Masking_Job_Run_Object__c
-            WHERE Masking_Job_Run__c = :r.Id
-            ORDER BY Sequence__c
+            WHERE Masking_Job_Run__c = :r.Id WITH USER_MODE ORDER BY Sequence__c
         ]) {
             RunObjectSummary os = new RunObjectSummary();
             os.id = ro.Id;
@@ -246,7 +254,7 @@ public without sharing class MaskingJobManagerService {
 
         Set<Id> asyncIds=new Set<Id>();
         for(RunObjectSummary item:d.objects)if(String.isNotBlank(item.asyncJobId))asyncIds.add((Id)item.asyncJobId);
-        Map<Id,AsyncApexJob> engineJobs=new Map<Id,AsyncApexJob>([SELECT Id,Status,JobItemsProcessed,TotalJobItems,NumberOfErrors FROM AsyncApexJob WHERE Id IN :asyncIds]);
+        Map<Id,AsyncApexJob> engineJobs=new Map<Id,AsyncApexJob>([SELECT Id,Status,JobItemsProcessed,TotalJobItems,NumberOfErrors FROM AsyncApexJob WHERE Id IN :asyncIds WITH USER_MODE ]);
         Decimal successful=0;Decimal failed=0;
         for(RunObjectSummary item:d.objects) {
             successful+=item.processed;failed+=item.failed;
@@ -260,8 +268,7 @@ public without sharing class MaskingJobManagerService {
                    Status__c, Error_Message__c, Error_Category__c, Admin_Message__c,
                    Suggested_Action__c, Technical_Details__c
             FROM Masking_Log__c
-            WHERE Run_Id__c = :runtimeRunId
-            ORDER BY CreatedDate DESC
+            WHERE Run_Id__c = :runtimeRunId WITH USER_MODE ORDER BY CreatedDate DESC
             LIMIT 500
         ]) {
             RunLogSummary ls = new RunLogSummary();
@@ -284,11 +291,11 @@ public without sharing class MaskingJobManagerService {
     }
 
     private static void validateJobReady(Id jobId) {
-        Masking_Job__c job = [SELECT Run_Mode__c FROM Masking_Job__c WHERE Id=:jobId];
+        Masking_Job__c job = [SELECT Run_Mode__c FROM Masking_Job__c WHERE Id=:jobId WITH USER_MODE ];
         if (job.Run_Mode__c == 'Delta') throw client('Edit the job and choose Unmasked records only. No timestamp is required.');
         Set<String> runnable = MaskingConfigService.getActiveFieldConfigsByObject().keySet();
         List<String> invalid = new List<String>();
-        for (Masking_Job_Object__c item : [SELECT Object_API_Name__c FROM Masking_Job_Object__c WHERE Masking_Job__c=:jobId AND Is_Active__c=true ORDER BY Sequence__c]) {
+        for (Masking_Job_Object__c item : [SELECT Object_API_Name__c FROM Masking_Job_Object__c WHERE Masking_Job__c=:jobId AND Is_Active__c=true WITH USER_MODE ORDER BY Sequence__c]) {
             if (!runnable.contains(item.Object_API_Name__c)) invalid.add(item.Object_API_Name__c);
             String issue = MaskingCompletionService.configurationIssue(item.Object_API_Name__c); if (issue != null) invalid.add(issue);
         }

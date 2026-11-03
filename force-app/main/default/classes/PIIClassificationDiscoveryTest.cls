@@ -1,5 +1,6 @@
 @IsTest
 private class PIIClassificationDiscoveryTest {
+    @TestSetup static void permissions() { PrivacyGuardPackageTestAccess.grantAdmin(); }
     private static void tags(String objectName,String field,String complianceCategory,String sensitivity) {
         ComplianceCategorizationService.ComplianceInfo info=new ComplianceCategorizationService.ComplianceInfo();info.complianceGroup=complianceCategory;info.securityClassification=sensitivity;
         ComplianceCategorizationService.testTags=new Map<String,Map<String,ComplianceCategorizationService.ComplianceInfo>>{

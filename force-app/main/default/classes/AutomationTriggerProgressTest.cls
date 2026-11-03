@@ -4,11 +4,21 @@ private class AutomationTriggerProgressTest {
     private static final String REQUEST_ID='1dr000000000001AAA';
     private class ApiMock implements HttpCalloutMock {
         String state, actual, namespacePrefix; Boolean apiError;
+        String triggerName = 'Example';
         ApiMock(String state,String actual,String namespacePrefix,Boolean apiError) {
             this.state=state;this.actual=actual;this.namespacePrefix=namespacePrefix;this.apiError=apiError;
         }
         public HttpResponse respond(HttpRequest req) {
             HttpResponse res=new HttpResponse();
+            System.assert(req.getEndpoint().startsWith('callout:PrivacyGuard_Tooling/'), 'Use only the fixed OAuth Named Credential endpoint.');
+            System.assertEquals(null,req.getHeader('Authorization'),'Apex must not construct an authorization header.');
+            if (req.getEndpoint().contains('/query/?q=') && !req.getEndpoint().contains('/tooling/')) {
+                res.setStatusCode(200);
+                res.setBody(JSON.serialize(new Map<String,Object>{'records'=>new List<Object>{
+                    new Map<String,Object>{'Id'=>UserInfo.getOrganizationId(),'IsSandbox'=>true}}}));
+                return res;
+            }
+
             if (apiError) {res.setStatusCode(503);res.setBody('Service unavailable');return res;}
             if (req.getMethod() == 'POST') {
                 Map<String,Object> body=(Map<String,Object>)JSON.deserializeUntyped(req.getBody());
@@ -25,7 +35,7 @@ private class AutomationTriggerProgressTest {
                     'Id'=>REQUEST_ID,'State'=>state,'ErrorMsg'=>'Compiler rejected change','DeployDetails'=>new Map<String,Object>{'problem'=>'Example compile error'}}}}));
             } else {
                 res.setBody(JSON.serialize(new Map<String,Object>{'records'=>new List<Object>{new Map<String,Object>{
-                    'Id'=>TRIGGER_ID,'Body'=>'trigger Example on Account (before insert) {}','ApiVersion'=>66.0,
+                    'Id'=>TRIGGER_ID,'Name'=>triggerName,'Body'=>'trigger Example on Account (before insert) {}','ApiVersion'=>66.0,
                     'NamespacePrefix'=>namespacePrefix,'Status'=>actual}}}));
             }
             return res;
@@ -114,6 +124,29 @@ private class AutomationTriggerProgressTest {
         System.assertEquals('Failed',result().Deployment_Status__c,result().Deployment_Message__c);
         System.assertEquals(null,result().Deployment_Request_Id__c,'No deployment may be submitted for namespaced triggers.');
         System.assert(result().Deployment_Message__c.contains('Namespaced triggers'),result().Deployment_Message__c);
+    }
+    @IsTest static void protectedTriggerCannotBeChangedUsingSpoofedName() {
+        setupTrack('Inactive',false);
+        ApiMock mock = new ApiMock(null,'Active',null,false);
+        mock.triggerName = 'PGAuditMaskingFieldConfig';
+        Test.setMock(HttpCalloutMock.class,mock);
+        Test.startTest();
+        new AutomationTriggerToggleQueueable(TRIGGER_ID,'Example','TEST','Inactive').execute(null);
+        Test.stopTest();
+        System.assertEquals('Failed',result().Deployment_Status__c,'Protected trigger must be rejected by the worker.');
+        System.assertEquals(null,result().Deployment_Request_Id__c,'No deployment may be submitted for an audit trigger.');
+        System.assert(result().Deployment_Message__c.contains('audit triggers'),result().Deployment_Message__c);
+    }
+    @IsTest static void missingServerIdentityCannotSubmitDeployment() {
+        setupTrack('Inactive',false);
+        ApiMock mock = new ApiMock(null,'Active',null,false);
+        mock.triggerName = null;
+        Test.setMock(HttpCalloutMock.class,mock);
+        Test.startTest();
+        new AutomationTriggerToggleQueueable(TRIGGER_ID,'Example','TEST','Inactive').execute(null);
+        Test.stopTest();
+        System.assertEquals('Failed',result().Deployment_Status__c,'A missing server identity must fail closed.');
+        System.assertEquals(null,result().Deployment_Request_Id__c,'No deployment may be submitted without a verified name.');
     }
     @IsTest static void staleRequestCannotOverwriteNewerOperation() {
         Deactivated_Automation__c d=setupTrack('Inactive',true);

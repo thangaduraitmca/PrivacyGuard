@@ -44,7 +44,7 @@ public with sharing class PrivacyGuardConfigurationController {
     }
     @AuraEnabled public static List<FieldRow> getConfigurations() {
         auth(); List<FieldRow> out=new List<FieldRow>();
-        for(Masking_Field_Config__c c:[SELECT Id,Object_API_Name__c,Field_API_Name__c,Field_Label__c,Salesforce_Field_Type__c,Masking_Strategy__c,Masking_Pattern__c,Is_Active__c,Configuration_Source__c FROM Masking_Field_Config__c WITH SECURITY_ENFORCED ORDER BY Object_API_Name__c,Field_API_Name__c]) { FieldRow r=new FieldRow(); r.id=c.Id;r.objectApiName=c.Object_API_Name__c;r.fieldApiName=c.Field_API_Name__c;r.fieldLabel=c.Field_Label__c;r.fieldType=c.Salesforce_Field_Type__c;r.strategy=c.Masking_Strategy__c;r.pattern=c.Masking_Pattern__c;r.active=c.Is_Active__c;r.source=c.Configuration_Source__c;
+        for(Masking_Field_Config__c c:[SELECT Id,Object_API_Name__c,Field_API_Name__c,Field_Label__c,Salesforce_Field_Type__c,Masking_Strategy__c,Masking_Pattern__c,Is_Active__c,Configuration_Source__c FROM Masking_Field_Config__c WITH USER_MODE ORDER BY Object_API_Name__c,Field_API_Name__c]) { FieldRow r=new FieldRow(); r.id=c.Id;r.objectApiName=c.Object_API_Name__c;r.fieldApiName=c.Field_API_Name__c;r.fieldLabel=c.Field_Label__c;r.fieldType=c.Salesforce_Field_Type__c;r.strategy=c.Masking_Strategy__c;r.pattern=c.Masking_Pattern__c;r.active=c.Is_Active__c;r.source=c.Configuration_Source__c;
             String savedType = String.valueOf(c.Salesforce_Field_Type__c).toUpperCase();
             r.unsupported = savedType == 'PICKLIST' || savedType == 'MULTIPICKLIST';
             r.unsupportedReason = r.unsupported ? 'Picklist fields are not supported for masking. Values remain unchanged.' : null;
@@ -61,10 +61,18 @@ public with sharing class PrivacyGuardConfigurationController {
     }
     @AuraEnabled public static void saveConfigurations(List<FieldRow> rows) {
         auth(); if(rows==null||rows.isEmpty()) throw client('No configuration rows received. Refresh the page and try again.'); Map<String,Masking_Field_Config__c> existing=new Map<String,Masking_Field_Config__c>();
-        for(Masking_Field_Config__c c:[SELECT Id,Object_API_Name__c,Field_API_Name__c FROM Masking_Field_Config__c]) existing.put((c.Object_API_Name__c+'.'+c.Field_API_Name__c).toLowerCase(),c);
+        for(Masking_Field_Config__c c:[SELECT Id,Object_API_Name__c,Field_API_Name__c FROM Masking_Field_Config__c WITH USER_MODE ]) existing.put((c.Object_API_Name__c+'.'+c.Field_API_Name__c).toLowerCase(),c);
         List<Masking_Field_Config__c> saves=new List<Masking_Field_Config__c>();
         for(FieldRow r:rows){ if(r==null||String.isBlank(r.objectApiName)||String.isBlank(r.fieldApiName)) throw client('Configuration object or field is missing. Refresh the page and try again.'); if(r.strategy!=null) r.strategy=r.strategy.trim().toUpperCase(); Schema.SObjectType t=Schema.getGlobalDescribe().get(r.objectApiName); if(t==null) throw client('Unknown object '+r.objectApiName); Schema.SObjectField ft=PrivacyGuardSchema.field(t.getDescribe(),r.fieldApiName); if(ft==null) throw client('Unknown field '+r.fieldApiName); Schema.DescribeFieldResult d=ft.getDescribe(); if(d.isCalculated() || d.getType()==Schema.DisplayType.PICKLIST || d.getType()==Schema.DisplayType.MULTIPICKLIST) { if(existing.containsKey((r.objectApiName+'.'+r.fieldApiName).toLowerCase())) continue; throw client('This field type is not supported for masking: '+r.fieldApiName); } if(!SchemaValidationUtil.isSupportedMaskingField(d)) throw client('Field '+r.fieldApiName+' ('+d.getType()+') is not supported for masking.'); if(r.active==true&&String.isBlank(r.strategy)) throw client('Select a masking strategy before activating '+r.fieldApiName+'.'); validateStrategyForField(d, r.strategy, r.fieldApiName); if ('NUMBER_RANGE'.equalsIgnoreCase(r.strategy)) { try { NumericRangeMaskStrategy.validateRange(d,r.pattern); } catch(Exception ex) { throw client(r.objectApiName+'.'+r.fieldApiName+': '+ex.getMessage()); } } if ('LIST'.equalsIgnoreCase(r.strategy)) { try { ListMaskStrategy.validateValues(d,r.pattern); } catch(Exception ex) { throw client(r.objectApiName+'.'+r.fieldApiName+': '+ex.getMessage()); } } if ('NULL'.equalsIgnoreCase(r.strategy)) r.pattern=null; validateStaticPattern(d, r); if ('REGEX'.equalsIgnoreCase(r.strategy)) { try { RegexReplaceMaskStrategy.validateRule(r.pattern); } catch (Exception ex) { throw client(r.objectApiName+'.'+r.fieldApiName+': '+ex.getMessage()); } } String key=(r.objectApiName+'.'+r.fieldApiName).toLowerCase(); Masking_Field_Config__c c=existing.get(key); if(c==null)c=new Masking_Field_Config__c(); c.Object_API_Name__c=t.getDescribe().getName();c.Field_API_Name__c=d.getName();c.Field_Label__c=d.getLabel();c.Salesforce_Field_Type__c=String.valueOf(d.getType());c.Masking_Strategy__c=r.strategy;c.Masking_Pattern__c=r.pattern;c.Is_Active__c=r.active==true;c.Configuration_Source__c=String.isBlank(r.source)?'Manual':r.source;saves.add(c); }
-        List<Masking_Field_Config__c> inserts=new List<Masking_Field_Config__c>(); List<Masking_Field_Config__c> updates=new List<Masking_Field_Config__c>(); for(Masking_Field_Config__c c:saves){if(c.Id==null)inserts.add(c);else updates.add(c);} if(!inserts.isEmpty()){SObjectAccessDecision d=Security.stripInaccessible(AccessType.CREATABLE,inserts);insert d.getRecords();} if(!updates.isEmpty()){SObjectAccessDecision d=Security.stripInaccessible(AccessType.UPDATABLE,updates);update d.getRecords();}
+        List<Masking_Field_Config__c> inserts=new List<Masking_Field_Config__c>(); List<Masking_Field_Config__c> updates=new List<Masking_Field_Config__c>(); for(Masking_Field_Config__c c:saves){if(c.Id==null)inserts.add(c);else updates.add(c);}
+        Savepoint checkpoint=Database.setSavepoint();
+        try {
+            if(!inserts.isEmpty()) insert as user inserts;
+            if(!updates.isEmpty()) update as user updates;
+        } catch (Exception ex) {
+            Database.rollback(checkpoint);
+            throw ex;
+        }
     }
     /**
      * Adds accepted discovery candidates to masking configuration without allowing a
@@ -79,7 +87,7 @@ public with sharing class PrivacyGuardConfigurationController {
         if (rows == null || rows.isEmpty()) return 0;
 
         Map<String, Masking_Field_Config__c> existing = new Map<String, Masking_Field_Config__c>();
-        for (Masking_Field_Config__c c : [SELECT Id, Object_API_Name__c, Field_API_Name__c FROM Masking_Field_Config__c]) {
+        for (Masking_Field_Config__c c : [SELECT Id, Object_API_Name__c, Field_API_Name__c FROM Masking_Field_Config__c WITH USER_MODE ]) {
             existing.put((c.Object_API_Name__c + '.' + c.Field_API_Name__c).toLowerCase(), c);
         }
 
@@ -114,9 +122,7 @@ public with sharing class PrivacyGuardConfigurationController {
         }
 
         if (!inserts.isEmpty()) {
-            SObjectAccessDecision accessDecision = Security.stripInaccessible(AccessType.CREATABLE, inserts);
-            List<SObject> permitted = accessDecision.getRecords();
-            if (!permitted.isEmpty()) insert permitted;
+            insert as user inserts;
         }
         return inserts.size();
     }
@@ -148,12 +154,12 @@ public with sharing class PrivacyGuardConfigurationController {
     @AuraEnabled public static void deleteConfigurations(List<Id> configurationIds) {
         auth();
         if (configurationIds == null || configurationIds.isEmpty()) return;
-        List<Masking_Field_Config__c> rows = [SELECT Id FROM Masking_Field_Config__c WHERE Id IN :configurationIds];
+        List<Masking_Field_Config__c> rows = [SELECT Id FROM Masking_Field_Config__c WHERE Id IN :configurationIds WITH USER_MODE ];
         if (rows.isEmpty()) return;
         if (!Schema.sObjectType.Masking_Field_Config__c.isDeletable()) {
             throw client('You do not have permission to delete masking configurations.');
         }
-        delete rows;
+        delete as user rows;
     }
 
     /** Import accepted PII fields without changing existing masking strategies or activation. */
@@ -165,7 +171,7 @@ public with sharing class PrivacyGuardConfigurationController {
             SELECT Object_API_Name__c, Field_API_Name__c
             FROM PII_Scan_Result__c
             WHERE Review_Status__c = 'Accepted'
-            WITH SECURITY_ENFORCED
+            WITH USER_MODE
         ]) {
             if (String.isBlank(finding.Object_API_Name__c) || String.isBlank(finding.Field_API_Name__c)) continue;
             String key = (finding.Object_API_Name__c.trim() + '.' + finding.Field_API_Name__c.trim()).toLowerCase();
@@ -183,7 +189,7 @@ public with sharing class PrivacyGuardConfigurationController {
         auth();
         List<KeywordRow> out = new List<KeywordRow>();
         Map<String, PII_Keyword_Config__c> overrides = new Map<String, PII_Keyword_Config__c>();
-        for (PII_Keyword_Config__c k : [SELECT Id, Keyword__c, Is_Active__c, Notes__c FROM PII_Keyword_Config__c WITH SECURITY_ENFORCED ORDER BY Keyword__c]) {
+        for (PII_Keyword_Config__c k : [SELECT Id, Keyword__c, Is_Active__c, Notes__c FROM PII_Keyword_Config__c WITH USER_MODE ORDER BY Keyword__c]) {
             if (String.isNotBlank(k.Keyword__c)) overrides.put(normalizeKeyword(k.Keyword__c), k);
         }
         for (PII_Keyword__mdt k : [SELECT Keyword__c FROM PII_Keyword__mdt ORDER BY Keyword__c]) {
@@ -213,13 +219,12 @@ public with sharing class PrivacyGuardConfigurationController {
         for (PII_Keyword__mdt d : [SELECT Keyword__c FROM PII_Keyword__mdt]) {
             if (normalizeKeyword(d.Keyword__c) == normalized) throw client('Keyword "' + cleaned + '" already exists.');
         }
-        for (PII_Keyword_Config__c e : [SELECT Id, Keyword__c FROM PII_Keyword_Config__c]) {
+        for (PII_Keyword_Config__c e : [SELECT Id, Keyword__c FROM PII_Keyword_Config__c WITH USER_MODE ]) {
             if (e.Id != id && normalizeKeyword(e.Keyword__c) == normalized) throw client('Keyword "' + cleaned + '" already exists.');
         }
         PII_Keyword_Config__c k = id == null ? new PII_Keyword_Config__c() : new PII_Keyword_Config__c(Id=id);
         k.Keyword__c=cleaned; k.Is_Active__c=active != false; k.Notes__c=notes;
-        SObjectAccessDecision d=Security.stripInaccessible(id==null?AccessType.CREATABLE:AccessType.UPDATABLE,new List<PII_Keyword_Config__c>{k});
-        if(id==null) insert d.getRecords(); else update d.getRecords();
+        if(id==null) insert as user k; else update as user k;
     }
 
     @AuraEnabled public static void deleteKeyword(Id id, String keyword, Boolean packagedDefault) {
@@ -227,23 +232,21 @@ public with sharing class PrivacyGuardConfigurationController {
         if (packagedDefault == true) {
             if (String.isBlank(keyword)) throw client('Keyword is required.');
             String normalized = normalizeKeyword(keyword);
-            for (PII_Keyword_Config__c existing : [SELECT Id, Keyword__c, Is_Active__c FROM PII_Keyword_Config__c]) {
+            for (PII_Keyword_Config__c existing : [SELECT Id, Keyword__c, Is_Active__c FROM PII_Keyword_Config__c WITH USER_MODE ]) {
                 if (normalizeKeyword(existing.Keyword__c) == normalized) {
                     existing.Is_Active__c = false;
-                    SObjectAccessDecision u = Security.stripInaccessible(AccessType.UPDATABLE, new List<PII_Keyword_Config__c>{existing});
-                    update u.getRecords();
+                    update as user existing;
                     return;
                 }
             }
             PII_Keyword_Config__c exclusion = new PII_Keyword_Config__c(Keyword__c=keyword.trim(), Is_Active__c=false, Notes__c='Excluded packaged default');
-            SObjectAccessDecision c = Security.stripInaccessible(AccessType.CREATABLE, new List<PII_Keyword_Config__c>{exclusion});
-            insert c.getRecords();
+            insert as user exclusion;
             return;
         }
         if (id == null) throw client('Keyword record is required.');
         if (!Schema.sObjectType.PII_Keyword_Config__c.isDeletable()) throw client('You do not have permission to delete PII keywords.');
-        List<PII_Keyword_Config__c> rows = [SELECT Id FROM PII_Keyword_Config__c WHERE Id=:id LIMIT 1];
-        if (!rows.isEmpty()) delete rows;
+        List<PII_Keyword_Config__c> rows = [SELECT Id FROM PII_Keyword_Config__c WHERE Id=:id WITH USER_MODE LIMIT 1];
+        if (!rows.isEmpty()) delete as user rows;
     }
 
     private static String normalizeKeyword(String value) {

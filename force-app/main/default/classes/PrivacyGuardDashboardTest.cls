@@ -56,4 +56,36 @@ private class PrivacyGuardDashboardTest {
         System.assertEquals(5,result.recentRuns.size());
         System.assertEquals('Attention Required',result.privacyStatus);
     }
+    private static User limitedUser(String suffix) {
+        Profile profile = [SELECT Id FROM Profile WHERE Name='Standard User' LIMIT 1];
+        String login='pg-dashboard-'+suffix+'-'+String.valueOf(DateTime.now().getTime())+'@example.invalid';
+        return new User(Alias='pgdash',Email=login,EmailEncodingKey='UTF-8',
+            LastName='Dashboard Access',LanguageLocaleKey='en_US',LocaleSidKey='en_US',
+            ProfileId=profile.Id,TimeZoneSidKey='America/Los_Angeles',UserName=login);
+    }
+    @IsTest static void dashboardRequiresPiiPermission() {
+        PrivacyGuardSecurityService.bypassPermissionChecksForTests=false;
+        User limited=limitedUser('permission');
+        System.runAs(limited) {
+            Boolean blocked=false;
+            Integer beforeQueries=Limits.getQueries();
+            try { PrivacyGuardHomeController.getOverview(); }
+            catch (PrivacyGuardSecurityService.PrivacyGuardAuthorizationException ex) { blocked=true; }
+            System.assert(blocked,'Dashboard metrics must require PII management permission.');
+            System.assertEquals(beforeQueries,Limits.getQueries(),'Authorization must precede data access.');
+        }
+    }
+    @IsTest static void dashboardDoesNotExposeConfigurationWithoutReadAccess() {
+        MaskingTestConfiguration.createDefaults();
+        PrivacyGuardSecurityService.bypassPermissionChecksForTests=true;
+        User limited=limitedUser('crud');
+        System.runAs(limited) {
+            System.assertEquals(false,Masking_Field_Config__c.SObjectType.getDescribe().isAccessible(),
+                'The test profile must lack configuration read access.');
+            Boolean blocked=false;
+            try { PrivacyGuardHomeController.getOverview(); }
+            catch (QueryException ex) { blocked=true; }
+            System.assert(blocked,'User-mode queries must block dashboard data access even when custom-permission checks are bypassed.');
+        }
+    }
 }

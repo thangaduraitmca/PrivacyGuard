@@ -51,7 +51,7 @@ public with sharing class MaskingLogger {
             List<Masking_Log__c> toInsert = pendingLogs;
             pendingLogs = new List<Masking_Log__c>();
             try {
-                insert toInsert;
+                insert as system toInsert;
             } catch (Exception e) {
                 // Fail closed: the surrounding execute transaction must roll back its
                 // masking DML if the failure audit cannot be persisted.
@@ -62,7 +62,7 @@ public with sharing class MaskingLogger {
 
     private static void insertLogNow(String jobName, String objectApiName, Id recordId, String fieldApiName, String message, String status) {
         try {
-            insert new Masking_Log__c(
+            insert as system new Masking_Log__c(
                 Activity_Category__c = PrivacyGuardAuditService.categoryFor(jobName, objectApiName),
             Job_Name__c = jobName,
                 Object_API_Name__c = objectApiName,

@@ -12,90 +12,108 @@
  * 1.0.0       2026-09-16   PG-BASELINE-001    PrivacyGuard Engineering   Established managed-package audit and change-control baseline.
  */
 /**
- * Minimal Tooling API HTTP client for self-org callouts (query + single-record PATCH).
- * Shared by AutomationMetadataToggleService and ComplianceCategorizationService-style
- * integrations.
- *
- * PREREQUISITE: requires a Remote Site Setting authorizing callouts to this org's own
- * My Domain URL (Setup > Remote Site Settings > New, URL = your My Domain). Uses
- * UserInfo.getSessionId() as the bearer token, which works from Anonymous Apex, Batch
- * Apex, and Scheduled Apex, but is blocked by Salesforce from being reused for
- * callouts when the session originates from a Visualforce/LWC page request - by
- * design, every caller in this framework only invokes Tooling API operations from
- * synchronous Apex triggered by a button click's server round-trip (not the session
- * itself), which works fine in practice, but keep this restriction in mind if you
- * extend this class.
+ * OAuth Tooling transport through the subscriber-owned PrivacyGuard_Tooling
+ * Named Credential. Salesforce manages tokens; Apex never reads session IDs or
+ * builds authorization headers. Every transaction verifies the remote org identity
+ * and sandbox status before accessing Tooling metadata.
  */
 public with sharing class ToolingApiClient {
 
     private static final String API_VERSION = 'v66.0';
+    private static final String ENDPOINT = 'callout:PrivacyGuard_Tooling';
+    private static Boolean targetVerified = false;
 
     public class ToolingApiException extends Exception {}
 
-    // Read-only diagnostic. Never returns or logs an API session token.
+    // No credentials or response bodies are exposed by this diagnostic.
     public static String diagnoseConnection() {
-        String sid = UserInfo.getSessionId();
-        if (String.isBlank(sid)) return 'NO_SESSION';
+        authorize();
         try {
-            HttpRequest req = new HttpRequest();
-            req.setEndpoint(Url.getOrgDomainUrl().toExternalForm() +
-                '/services/data/' + API_VERSION + '/tooling/query/?q=' +
-                EncodingUtil.urlEncode('SELECT Id FROM ApexClass LIMIT 1', 'UTF-8'));
-            req.setMethod('GET');
-            req.setHeader('Authorization', 'Bearer ' + sid);
-            req.setHeader('Accept', 'application/json');
-            req.setTimeout(20000);
-            HttpResponse res = new Http().send(req);
-            return 'HTTP ' + res.getStatusCode();
-        } catch (Exception ex) {
-            // Avoid exposing exception contents, which can contain endpoint details.
-            return 'CALLOUT_ERROR';
+            verifyTargetOrg();
+            return 'HTTP 200: same sandbox verified';
+        } catch (ToolingApiException ex) {
+            return 'CONFIGURATION_ERROR: Verify PrivacyGuard_Tooling OAuth authorization, principal access, allowed namespace and same-sandbox URL.';
         }
     }
 
-
-
     public static Map<String, Object> query(String soql) {
+        authorize();
+        if (String.isBlank(soql) || !Pattern.compile('(?i)^\\s*SELECT\\s+.+\\s+FROM\\s+(ApexTrigger|ContainerAsyncRequest|ApexClass)(\\s|$)').matcher(soql).find()) {
+            throw new ToolingApiException('Only PrivacyGuard trigger deployment queries are supported.');
+        }
+        verifyTargetOrg();
         HttpRequest req = new HttpRequest();
-        req.setEndpoint(Url.getOrgDomainUrl().toExternalForm() +
+        req.setEndpoint(ENDPOINT +
             '/services/data/' + API_VERSION + '/tooling/query/?q=' + EncodingUtil.urlEncode(soql, 'UTF-8'));
         req.setMethod('GET');
-        req.setHeader('Authorization', 'Bearer ' + UserInfo.getSessionId());
         req.setTimeout(20000);
 
-        HttpResponse res = new Http().send(req);
+        HttpResponse res = send(req);
         if (res.getStatusCode() != 200) {
-            throw new ToolingApiException('Tooling API query failed (HTTP ' + res.getStatusCode() + '): ' + res.getBody());
+            throw new ToolingApiException('Tooling API query failed (HTTP ' + res.getStatusCode() + ').');
         }
         return (Map<String, Object>) JSON.deserializeUntyped(res.getBody());
     }
 
     /** Create a Tooling API record and return its Id. */
     public static String post(String sobjectType, String jsonBody) {
+        authorize();
+        if (!new Set<String>{'MetadataContainer','ApexTriggerMember','ContainerAsyncRequest'}.contains(sobjectType)) {
+            throw new ToolingApiException('Unsupported Tooling API resource.');
+        }
+        verifyTargetOrg();
         HttpRequest req = new HttpRequest();
-        req.setEndpoint(Url.getOrgDomainUrl().toExternalForm() + '/services/data/' + API_VERSION + '/tooling/sobjects/' + sobjectType);
-        req.setMethod('POST'); req.setHeader('Authorization', 'Bearer ' + UserInfo.getSessionId()); req.setHeader('Content-Type', 'application/json'); req.setBody(jsonBody); req.setTimeout(20000);
-        HttpResponse res = new Http().send(req);
-        if (res.getStatusCode() != 201) throw new ToolingApiException('Tooling API create failed for ' + sobjectType + ' (HTTP ' + res.getStatusCode() + '): ' + res.getBody());
+        req.setEndpoint(ENDPOINT + '/services/data/' + API_VERSION + '/tooling/sobjects/' + sobjectType);
+        req.setMethod('POST'); req.setHeader('Content-Type', 'application/json'); req.setBody(jsonBody); req.setTimeout(20000);
+        HttpResponse res = send(req);
+        if (res.getStatusCode() != 201) throw new ToolingApiException('Tooling API create failed for ' + sobjectType + ' (HTTP ' + res.getStatusCode() + ').');
         return (String)((Map<String,Object>)JSON.deserializeUntyped(res.getBody())).get('id');
     }
 
-    /** PATCH a single Tooling API sobject record. jsonBody is the raw request body, e.g. {"Metadata":{"active":false}}. */
+    /** Compatibility endpoint: direct metadata PATCH operations are retired. */
     public static void patch(String sobjectType, String recordId, String jsonBody) {
-        HttpRequest req = new HttpRequest();
-        req.setEndpoint(Url.getOrgDomainUrl().toExternalForm() +
-            '/services/data/' + API_VERSION + '/tooling/sobjects/' + sobjectType + '/' + recordId);
-        req.setMethod('PATCH');
-        req.setHeader('Authorization', 'Bearer ' + UserInfo.getSessionId());
-        req.setHeader('Content-Type', 'application/json');
-        req.setBody(jsonBody);
-        req.setTimeout(20000);
-
-        HttpResponse res = new Http().send(req);
-        // Tooling API PATCH returns 204 No Content on success.
-        if (res.getStatusCode() != 204) {
-            throw new ToolingApiException('Tooling API update failed for ' + sobjectType + '/' + recordId +
-                ' (HTTP ' + res.getStatusCode() + '): ' + res.getBody());
+        authorize();
+        throw new ToolingApiException('Direct metadata PATCH is not supported. Use controlled Apex trigger deployment.');
+    }
+    private static void authorize() {
+        if (!PrivacyGuardSecurityService.hasMetadataDeactivationPermission()) {
+            throw new PrivacyGuardSecurityService.PrivacyGuardAuthorizationException('You do not have permission to manage automation metadata.');
+        }
+        EnvironmentSafetyService.assertExecutionAllowed();
+    }
+    private static void verifyTargetOrg() {
+        if (targetVerified) return;
+        HttpRequest req=new HttpRequest();
+        req.setEndpoint(ENDPOINT + '/services/data/' + API_VERSION + '/query/?q=' +
+            EncodingUtil.urlEncode('SELECT Id, IsSandbox FROM Organization LIMIT 1','UTF-8'));
+        req.setMethod('GET');req.setHeader('Accept','application/json');req.setTimeout(20000);
+        HttpResponse res=send(req);
+        if (res.getStatusCode()!=200) {
+            throw new ToolingApiException('Could not verify the OAuth target org (HTTP '+res.getStatusCode()+').');
+        }
+        try {
+            Map<String,Object> data=(Map<String,Object>)JSON.deserializeUntyped(res.getBody());
+            List<Object> records=(List<Object>)data.get('records');
+            if (records==null || records.size()!=1) throw new ToolingApiException('Target identity unavailable.');
+            Map<String,Object> org=(Map<String,Object>)records[0];
+            String remoteId=(String)org.get('Id');
+            String localId=UserInfo.getOrganizationId();
+            if (String.isBlank(remoteId) || (remoteId.length()!=15 && remoteId.length()!=18) ||
+                remoteId.left(15)!=localId.left(15) || org.get('IsSandbox')!=true) {
+                throw new ToolingApiException('The Named Credential must connect to this same sandbox org.');
+            }
+        } catch (ToolingApiException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new ToolingApiException('The OAuth target org identity could not be verified. No Tooling operation was sent.');
+        }
+        targetVerified=true;
+    }
+    private static HttpResponse send(HttpRequest req) {
+        try {
+            return new Http().send(req);
+        } catch (CalloutException ex) {
+            throw new ToolingApiException('OAuth callout unavailable. Configure and authorize the PrivacyGuard_Tooling Named Credential for the running user.');
         }
     }
 }

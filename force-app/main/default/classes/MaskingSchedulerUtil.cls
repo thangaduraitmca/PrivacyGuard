@@ -24,6 +24,9 @@ public with sharing class MaskingSchedulerUtil {
      * Example: MaskingSchedulerUtil.scheduleDaily('Daily Sandbox Mask', 2); // 2 AM daily
      */
     public static Id scheduleDaily(String jobName, Integer hourOfDay) {
+        PrivacyGuardSecurityService.requireRunPermission();
+        EnvironmentSafetyService.assertExecutionAllowed();
+        if (hourOfDay == null || hourOfDay < 0 || hourOfDay > 23) throw new IllegalArgumentException('Hour must be 0 to 23.');
         String cron = '0 0 ' + hourOfDay + ' * * ?';
         return System.schedule(jobName, cron, new MaskingScheduler());
     }
@@ -34,17 +37,24 @@ public with sharing class MaskingSchedulerUtil {
      * Example: MaskingSchedulerUtil.scheduleWeekly('Weekly Sandbox Mask', 'SUN', 2); // 2 AM every Sunday
      */
     public static Id scheduleWeekly(String jobName, String dayOfWeek, Integer hourOfDay) {
+        PrivacyGuardSecurityService.requireRunPermission();
+        EnvironmentSafetyService.assertExecutionAllowed();
+        if (hourOfDay == null || hourOfDay < 0 || hourOfDay > 23) throw new IllegalArgumentException('Hour must be 0 to 23.');
         String cron = '0 0 ' + hourOfDay + ' ? * ' + dayOfWeek;
         return System.schedule(jobName, cron, new MaskingScheduler());
     }
 
     /** Aborts any currently scheduled masking jobs (matched by CronTrigger job name prefix). */
     public static void abortScheduledJobsByName(String jobNamePrefix) {
-        String likePattern = jobNamePrefix + '%';
+        PrivacyGuardSecurityService.requireRunPermission();
+        EnvironmentSafetyService.assertExecutionAllowed();
+        if (String.isBlank(jobNamePrefix) || jobNamePrefix.contains('%')) {
+            throw new IllegalArgumentException('A literal nonempty schedule prefix is required.');
+        }
+        String likePattern = jobNamePrefix.replace('_','\\_') + '%';
         for (CronTrigger ct : [
             SELECT Id FROM CronTrigger
-            WHERE CronJobDetail.Name LIKE :likePattern
-        ]) {
+            WHERE CronJobDetail.Name LIKE :likePattern WITH USER_MODE ]) {
             System.abortJob(ct.Id);
         }
     }

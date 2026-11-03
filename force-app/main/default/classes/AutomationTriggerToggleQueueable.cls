@@ -33,12 +33,18 @@ public without sharing class AutomationTriggerToggleQueueable implements Queueab
         try {
             if (targetStatus != 'Active' && targetStatus != 'Inactive') throw new ToggleException('Invalid target trigger state.');
             if (requestId == null) {
-                Map<String,Object> q = ToolingApiClient.query('SELECT Id, Body, ApiVersion, NamespacePrefix FROM ApexTrigger WHERE Id = \'' + String.escapeSingleQuotes(triggerId) + '\' LIMIT 1');
+                Map<String,Object> q = ToolingApiClient.query('SELECT Id, Name, Body, ApiVersion, NamespacePrefix FROM ApexTrigger WHERE Id = \'' + String.escapeSingleQuotes(triggerId) + '\' LIMIT 1');
                 List<Object> rs = (List<Object>)q.get('records');
                 if (rs == null || rs.isEmpty()) throw new ToggleException('Trigger not found.');
                 Map<String,Object> tr = (Map<String,Object>)rs[0];
                 // Server-side defence even when this class is invoked directly.
                 if (String.isNotBlank((String)tr.get('NamespacePrefix'))) throw new ToggleException('Namespaced triggers cannot be changed by PrivacyGuard.');
+                String actualName = (String)tr.get('Name');
+                if (String.isBlank(actualName)) throw new ToggleException('The trigger identity could not be verified.');
+                if (PrivacyGuardAuditService.isProtectedTrigger(actualName)) {
+                    throw new ToggleException('PrivacyGuard audit triggers cannot be changed.');
+                }
+                triggerName = actualName;
                 String containerId = ToolingApiClient.post('MetadataContainer', JSON.serialize(new Map<String,Object>{
                     'Name'=>'PG_' + EncodingUtil.convertToHex(Crypto.generateAesKey(128)).left(29)}));
                 ToolingApiClient.post('ApexTriggerMember', JSON.serialize(new Map<String,Object>{

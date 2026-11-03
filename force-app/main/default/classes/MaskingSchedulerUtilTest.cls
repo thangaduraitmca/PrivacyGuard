@@ -13,9 +13,11 @@
  */
 @isTest
 private with sharing class MaskingSchedulerUtilTest {
+    @TestSetup static void permissions() { PrivacyGuardPackageTestAccess.grantAdmin(); }
 
     @isTest
     static void testScheduleDailyCreatesCronJob() {
+        EnvironmentSafetyService.sandboxOverrideForTests=true;
         Test.startTest();
         Id jobId = MaskingSchedulerUtil.scheduleDaily('Daily Mask Test', 2);
         Test.stopTest();
@@ -26,6 +28,7 @@ private with sharing class MaskingSchedulerUtilTest {
 
     @isTest
     static void testScheduleWeeklyCreatesCronJob() {
+        EnvironmentSafetyService.sandboxOverrideForTests=true;
         Test.startTest();
         Id jobId = MaskingSchedulerUtil.scheduleWeekly('Weekly Mask Test', 'SUN', 2);
         Test.stopTest();
@@ -36,6 +39,7 @@ private with sharing class MaskingSchedulerUtilTest {
 
     @isTest
     static void testAbortScheduledJobsByNameAbortsMatchingJobs() {
+        EnvironmentSafetyService.sandboxOverrideForTests=true;
         MaskingSchedulerUtil.scheduleDaily('Daily Mask Prefix Test', 3);
         System.assertEquals(1, [SELECT COUNT() FROM CronTrigger WHERE CronJobDetail.Name LIKE 'Daily Mask Prefix Test%']);
 

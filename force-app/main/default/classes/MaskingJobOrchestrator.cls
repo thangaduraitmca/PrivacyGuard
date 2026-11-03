@@ -42,6 +42,8 @@
 public with sharing class MaskingJobOrchestrator {
 
     public static void runMaskingJobs() {
+        PrivacyGuardSecurityService.requireRunPermission();
+        EnvironmentSafetyService.assertExecutionAllowed();
         List<MaskingConfigService.JobConfig> jobs = MaskingConfigService.getActiveJobSequence();
         if (jobs.isEmpty()) {
             MaskingLogger.logInfo('MaskingJobOrchestrator', 'No active masking jobs configured - nothing to run.');
@@ -52,6 +54,8 @@ public with sharing class MaskingJobOrchestrator {
 
     /** Entry point for both CMDT-driven runs and ad-hoc/programmatic job lists. */
     public static void runJobs(List<MaskingConfigService.JobConfig> jobs) {
+        PrivacyGuardSecurityService.requireRunPermission();
+        EnvironmentSafetyService.assertExecutionAllowed();
         if (jobs == null || jobs.isEmpty()) {
             MaskingLogger.logInfo('MaskingJobOrchestrator', 'No jobs to run.');
             return;
@@ -141,6 +145,8 @@ public with sharing class MaskingJobOrchestrator {
 
     /** Called from MaskingBatch/FileAttachmentDeletionBatch.finish(). Advances the serial chain and updates the tracker. */
     public static void handleJobCompletion(String jobName) {
+        PrivacyGuardSecurityService.requireRunPermission();
+        EnvironmentSafetyService.assertExecutionAllowed();
         List<MaskingConfigService.JobConfig> allJobs = MaskingConfigService.getActiveJobSequence();
         List<MaskingConfigService.JobConfig> serialJobs = new List<MaskingConfigService.JobConfig>();
         for (MaskingConfigService.JobConfig j : allJobs) {
@@ -172,7 +178,7 @@ public with sharing class MaskingJobOrchestrator {
             defaults = new Masking_Run_Tracker__c(
                 Total_Jobs__c = totalJobs, Completed_Jobs__c = 0,
                 Run_In_Progress__c = true, Run_Started_At__c = System.now());
-            insert defaults;
+            insert as system defaults;
             return;
         }
         Masking_Run_Tracker__c tracker = [SELECT Id, Total_Jobs__c, Completed_Jobs__c, Run_In_Progress__c, Run_Started_At__c
@@ -181,7 +187,7 @@ public with sharing class MaskingJobOrchestrator {
         tracker.Completed_Jobs__c = 0;
         tracker.Run_In_Progress__c = true;
         tracker.Run_Started_At__c = System.now();
-        update tracker;
+        update as system tracker;
     }
 
     private static void decrementTrackerAndMaybeEnableAutomations() {
@@ -193,7 +199,7 @@ public with sharing class MaskingJobOrchestrator {
         tracker.Completed_Jobs__c = (tracker.Completed_Jobs__c == null ? 0 : tracker.Completed_Jobs__c) + 1;
         Boolean complete = tracker.Total_Jobs__c != null && tracker.Completed_Jobs__c >= tracker.Total_Jobs__c;
         if (complete) tracker.Run_In_Progress__c = false;
-        update tracker;
+        update as system tracker;
 
         if (complete) {
             try {
@@ -222,7 +228,7 @@ public with sharing class MaskingJobOrchestrator {
         try {
             Masking_Run_Tracker__c tracker = [SELECT Id, Run_In_Progress__c FROM Masking_Run_Tracker__c WHERE Id = :defaults.Id FOR UPDATE];
             tracker.Run_In_Progress__c = false;
-            update tracker;
+            update as system tracker;
         } catch (Exception e) {
             MaskingLogger.logError('MaskingJobOrchestrator', null, null, null, 'Could not release run guard: ' + e.getMessage());
         }

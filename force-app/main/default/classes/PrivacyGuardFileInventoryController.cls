@@ -80,7 +80,7 @@ public with sharing class PrivacyGuardFileInventoryController {
                 audit.add(new Masking_Log__c(Job_Name__c='Selected_File_Deletion',Activity_Category__c='Files',Activity_Action__c='Delete',Record_Id__c=String.valueOf(item),Status__c='Failed',Error_Message__c=outcome.message));
             }
             // Audit is mandatory: a logging failure rolls back this request's deletions.
-            insert audit;
+            insert as system audit;
         } catch (Exception ex) {
             Database.rollback(checkpoint);
             throw client('This deletion request was rolled back. Verify delete permissions and audit-log availability.');

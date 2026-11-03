@@ -1,6 +1,7 @@
 /** Trigger management boundaries must reject excluded automation types. */
 @IsTest
 private class PrivacyGuardTriggerBoundaryTest {
+    @TestSetup static void packagePermissions() { PrivacyGuardPackageTestAccess.grantAdmin(); }
     @IsTest static void discoveryReturnsOnlyTriggersAndConsistentTotals() {
         Test.startTest();
         AutomationManagementController.Summary summary=AutomationManagementController.discover();

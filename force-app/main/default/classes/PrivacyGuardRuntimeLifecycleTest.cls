@@ -4,6 +4,7 @@ private class PrivacyGuardRuntimeLifecycleTest {
     @TestSetup static void setup(){
         PrivacyGuardPackageTestAccess.grantAdmin();MaskingTestConfiguration.createDefaults();}
     private static Masking_Job__c job(String mode) {
+        EnvironmentSafetyService.sandboxOverrideForTests=true;
         Masking_Job__c j=new Masking_Job__c(Job_Name__c='Runtime regression',Run_Mode__c=mode,Execution_Mode__c='Serial',Batch_Size__c=200,Is_Active__c=true);
         insert j;return j;
     }
@@ -85,5 +86,39 @@ private class PrivacyGuardRuntimeLifecycleTest {
         try {RuntimeMaskingJobOrchestrator.start(j.Id,false,null);}catch(AuraHandledException ex){rejected=true;}
         System.assert(rejected,'Jobs without objects must not start.');
         System.assertEquals(0,[SELECT COUNT() FROM Masking_Job_Run__c]);
+    }
+    @IsTest static void recoveryRejectsParentFromAnotherJobBeforeWriting() {
+        Masking_Job__c first=job('Full');
+        Masking_Job_Run__c parent=run(first.Id,'Failed');
+        Masking_Job__c second=job('Full');
+        Integer beforeDml=Limits.getDmlStatements();
+        Boolean rejected=false;
+        try { RuntimeMaskingJobOrchestrator.start(second.Id,true,parent.Id); }
+        catch (AuraHandledException ex) { rejected=true; }
+        System.assert(rejected,'Recovery must never use failures from a different job.');
+        System.assertEquals(beforeDml,Limits.getDmlStatements(),'Invalid recovery must be rejected before creating history or changing bypass flags.');
+    }
+    @IsTest static void recoveryRejectsSuccessfulParentBeforeWriting() {
+        Masking_Job__c j=job('Full');
+        Masking_Job_Run__c parent=run(j.Id,'Completed');
+        Integer beforeDml=Limits.getDmlStatements();
+        Boolean rejected=false;
+        try { RuntimeMaskingJobOrchestrator.start(j.Id,true,parent.Id); }
+        catch (AuraHandledException ex) { rejected=true; }
+        System.assert(rejected,'Recovery must require a failed parent run.');
+        System.assertEquals(beforeDml,Limits.getDmlStatements(),'Invalid recovery must not write records.');
+    }
+    @IsTest static void invalidCompletionCountsDoNotChangeHistory() {
+        Masking_Job__c j=job('Full');
+        Masking_Job_Run__c r=run(j.Id,'Running');
+        Masking_Job_Run_Object__c child=step(r.Id,'Running',1);
+        Integer beforeDml=Limits.getDmlStatements();
+        Boolean rejected=false;
+        try { RuntimeMaskingJobOrchestrator.completeObject(child.Id,-1,0,null); }
+        catch (AuraHandledException ex) { rejected=true; }
+        System.assert(rejected,'Negative counts must be rejected.');
+        System.assertEquals(beforeDml,Limits.getDmlStatements(),'Invalid completion must not change run totals.');
+        System.assertEquals('Running',[SELECT Status__c FROM Masking_Job_Run_Object__c WHERE Id=:child.Id].Status__c,
+            'Invalid completion must preserve the active step.');
     }
 }

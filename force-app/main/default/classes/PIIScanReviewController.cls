@@ -24,9 +24,8 @@
  * accept/reject them in bulk, kick off a new org-wide scan, and pull ready-to-deploy
  * Custom Metadata XML for accepted rows - all without writing SOQL or Apex by hand.
  *
- * SECURITY: reads enforce object/field-level security via WITH SECURITY_ENFORCED;
- * writes strip any field the running user can't actually edit via
- * Security.stripInaccessible() rather than blindly trusting client input. All
+ * SECURITY: reads enforce object/field-level security via WITH USER_MODE;
+ * writes use user mode and reject inaccessible fields rather than silently dropping them. All
  * exceptions are caught and re-thrown as AuraHandledException with an explicit
  * setMessage() call, since the constructor message alone isn't reliably surfaced to
  * the client (a well-known Salesforce quirk) - without it, the LWC sees only
@@ -52,8 +51,7 @@ public with sharing class PIIScanReviewController {
                 SELECT Id, CreatedDate
                 FROM AsyncApexJob
                 WHERE ApexClass.Name = 'PIIFieldScannerBatch'
-                AND Status = 'Completed'
-                ORDER BY CreatedDate DESC
+                AND Status = 'Completed' WITH USER_MODE ORDER BY CreatedDate DESC
                 LIMIT 1
             ];
             String latestScanId = latestJobs.isEmpty() ? null : String.valueOf(latestJobs[0].Id);
@@ -66,7 +64,7 @@ public with sharing class PIIScanReviewController {
                            Native_Compliance_Tag__c, Review_Status__c, Scan_Batch_Id__c
                     FROM PII_Scan_Result__c
                     WHERE Scan_Batch_Id__c LIKE 'MANUAL-%'
-                    WITH SECURITY_ENFORCED
+                    WITH USER_MODE
                     ORDER BY Object_API_Name__c, Field_API_Name__c, CreatedDate DESC
                     LIMIT 2000
                 ];
@@ -77,7 +75,7 @@ public with sharing class PIIScanReviewController {
                            Native_Compliance_Tag__c, Review_Status__c, Scan_Batch_Id__c
                     FROM PII_Scan_Result__c
                     WHERE Scan_Batch_Id__c = :latestScanId OR Scan_Batch_Id__c LIKE 'MANUAL-%'
-                    WITH SECURITY_ENFORCED
+                    WITH USER_MODE
                     ORDER BY Object_API_Name__c, Field_API_Name__c, CreatedDate DESC
                     LIMIT 2000
                 ];
@@ -102,6 +100,7 @@ public with sharing class PIIScanReviewController {
 
     @AuraEnabled
     public static void updateReviewStatus(List<Id> recordIds, String newStatus) {
+        Savepoint checkpoint;
         try {
             PrivacyGuardSecurityService.requirePiiPermission();
             if (recordIds == null || recordIds.isEmpty()) {
@@ -116,10 +115,9 @@ public with sharing class PIIScanReviewController {
                 toUpdate.add(new PII_Scan_Result__c(Id = recId, Review_Status__c = newStatus));
             }
 
-            // Strip any field the running user can't actually edit rather than trusting
-            // the client - update() then only touches fields this user is permitted to.
-            SObjectAccessDecision decision = Security.stripInaccessible(AccessType.UPDATABLE, toUpdate);
-            update decision.getRecords();
+            // User mode rejects denied fields and inaccessible records before approval.
+            checkpoint=Database.setSavepoint();
+            update as user toUpdate;
 
             // Acceptance is the governance approval to enter masking scope. Create the
             // configuration immediately, but keep it inactive until an administrator
@@ -127,8 +125,7 @@ public with sharing class PIIScanReviewController {
             if (newStatus == 'Accepted') {
                 List<PII_Scan_Result__c> accepted = [
                     SELECT Object_API_Name__c, Field_API_Name__c
-                    FROM PII_Scan_Result__c WHERE Id IN :recordIds
-                ];
+                    FROM PII_Scan_Result__c WHERE Id IN :recordIds WITH USER_MODE ];
                 List<PrivacyGuardConfigurationController.FieldRow> configRows = new List<PrivacyGuardConfigurationController.FieldRow>();
                 for (PII_Scan_Result__c finding : accepted) {
                     PrivacyGuardConfigurationController.FieldRow row = new PrivacyGuardConfigurationController.FieldRow();
@@ -141,6 +138,7 @@ public with sharing class PIIScanReviewController {
                 PrivacyGuardConfigurationController.saveAcceptedConfigurations(configRows);
             }
         } catch (Exception e) {
+            if (checkpoint != null) Database.rollback(checkpoint);
             throw wrapForClient('Could not update review status: ' + e.getMessage());
         }
     }
@@ -164,7 +162,7 @@ public with sharing class PIIScanReviewController {
             List<PII_Scan_Result__c> existing = [
                 SELECT Id FROM PII_Scan_Result__c
                 WHERE Object_API_Name__c = :objectName AND Field_API_Name__c = :fieldName
-                AND Review_Status__c != 'Removed' LIMIT 1
+                AND Review_Status__c != 'Removed' WITH USER_MODE LIMIT 1
             ];
             if (!existing.isEmpty()) return existing[0].Id;
             PII_Scan_Result__c candidate = new PII_Scan_Result__c(
@@ -174,11 +172,8 @@ public with sharing class PIIScanReviewController {
                 Already_Configured__c = false, Review_Status__c = 'New',
                 Scan_Batch_Id__c = 'MANUAL-' + String.valueOf(DateTime.now().getTime())
             );
-            SObjectAccessDecision decision = Security.stripInaccessible(AccessType.CREATABLE, new List<PII_Scan_Result__c>{candidate});
-            List<SObject> creatable = decision.getRecords();
-            if (creatable.isEmpty()) throw new SecurityException('No create access to PII scan results.');
-            insert creatable;
-            return ((PII_Scan_Result__c)creatable[0]).Id;
+            insert as user candidate;
+            return candidate.Id;
         } catch (Exception e) {
             throw wrapForClient('Could not add masking-scope candidate: ' + e.getMessage());
         }
@@ -192,8 +187,7 @@ public with sharing class PIIScanReviewController {
             List<AsyncApexJob> active = [
                 SELECT Id FROM AsyncApexJob
                 WHERE ApexClass.Name = 'PIIFieldScannerBatch'
-                AND Status IN ('Holding','Preparing','Queued','Processing')
-                ORDER BY CreatedDate DESC LIMIT 1
+                AND Status IN ('Holding','Preparing','Queued','Processing') WITH USER_MODE ORDER BY CreatedDate DESC LIMIT 1
             ];
             if (!active.isEmpty()) {
                 throw new IllegalArgumentException('A PrivacyGuard PII discovery scan is already running. Job: ' + active[0].Id);
@@ -217,18 +211,17 @@ public with sharing class PIIScanReviewController {
                 jobs = [SELECT Id, Status, JobItemsProcessed, TotalJobItems, NumberOfErrors,
                                CreatedDate, CompletedDate, ExtendedStatus
                         FROM AsyncApexJob
-                        WHERE ApexClass.Name = 'PIIFieldScannerBatch'
-                        ORDER BY CreatedDate DESC LIMIT 1];
+                        WHERE ApexClass.Name = 'PIIFieldScannerBatch' WITH USER_MODE ORDER BY CreatedDate DESC LIMIT 1];
             } else {
                 jobs = [SELECT Id, Status, JobItemsProcessed, TotalJobItems, NumberOfErrors,
                                CreatedDate, CompletedDate, ExtendedStatus
-                        FROM AsyncApexJob WHERE Id = :jobId AND ApexClass.Name = 'PIIFieldScannerBatch' LIMIT 1];
+                        FROM AsyncApexJob WHERE Id = :jobId AND ApexClass.Name = 'PIIFieldScannerBatch' WITH USER_MODE LIMIT 1];
             }
             if (jobs.isEmpty()) return null;
 
             AsyncApexJob job = jobs[0];
             String scanBatchId = String.valueOf(job.Id);
-            Integer candidateCount = [SELECT COUNT() FROM PII_Scan_Result__c WHERE Scan_Batch_Id__c = :scanBatchId];
+            Integer candidateCount = [SELECT COUNT() FROM PII_Scan_Result__c WHERE Scan_Batch_Id__c = :scanBatchId WITH USER_MODE ];
             ScanStatus result = new ScanStatus();
             result.jobId = job.Id;
             result.status = job.Status;
@@ -240,7 +233,7 @@ public with sharing class PIIScanReviewController {
             result.completedAt = job.CompletedDate;
             result.detail = job.ExtendedStatus;
             String warningKey='PII_Classification_'+scanBatchId;
-            List<Masking_Log__c> warnings=[SELECT Id FROM Masking_Log__c WHERE Job_Name__c=:warningKey LIMIT 1];
+            List<Masking_Log__c> warnings=[SELECT Id FROM Masking_Log__c WHERE Job_Name__c=:warningKey WITH USER_MODE LIMIT 1];
             result.classificationWarning=warnings.isEmpty()?null:'Classification lookup was incomplete for one or more objects. Keyword and field-type checks continued. Review Masking Logs for details.';
             return result;
         } catch (Exception e) {

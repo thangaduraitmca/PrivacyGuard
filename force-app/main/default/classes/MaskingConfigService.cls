@@ -75,8 +75,7 @@ public with sharing class MaskingConfigService {
         // Subscriber-managed runtime configuration overrides/adds to packaged CMDT by Object+Field.
         for (Masking_Field_Config__c cfg : [
             SELECT Object_API_Name__c, Field_API_Name__c, Masking_Strategy__c, Masking_Pattern__c, Execution_Group__c
-            FROM Masking_Field_Config__c WHERE Is_Active__c = true
-        ]) {
+            FROM Masking_Field_Config__c WHERE Is_Active__c = true WITH USER_MODE ]) {
             if (!canMaskField(cfg.Object_API_Name__c, cfg.Field_API_Name__c)) continue;
             FieldConfig fc = new FieldConfig();
             fc.objectApiName = cfg.Object_API_Name__c; fc.fieldApiName = cfg.Field_API_Name__c;

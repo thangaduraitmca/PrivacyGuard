@@ -35,4 +35,33 @@ private class PrivacyGuardJobReportingTest {
         MaskingControlPanelController.saveJobWithFrequency(jobId,'Manual',null,'Once','Serial',200,'["Contact"]','manual',null,null,null);
         jobs=MaskingControlPanelController.getJobs();System.assertEquals('Manual',jobs[0].scheduleStatus);System.assertEquals(null,jobs[0].nextScheduledRun);
     }
+    @IsTest static void deletingRunningJobIsRejectedWithoutRemovingHistory() {
+        Masking_Job__c job=new Masking_Job__c(Job_Name__c='Active deletion test');
+        insert job;
+        Masking_Job_Run__c run=new Masking_Job_Run__c(Masking_Job__c=job.Id,
+            Status__c='Running',Run_Type__c='Run');
+        insert run;
+        Boolean blocked=false;
+        try { MaskingJobManagerService.deleteJob(job.Id); }
+        catch (AuraHandledException ex) { blocked=true; }
+        System.assert(blocked,'An active run must prevent deleting its job.');
+        System.assertEquals(1,[SELECT COUNT() FROM Masking_Job__c WHERE Id=:job.Id],
+            'Rejected deletion must preserve the job.');
+        System.assertEquals(1,[SELECT COUNT() FROM Masking_Job_Run__c WHERE Id=:run.Id],
+            'Rejected deletion must preserve run history.');
+    }
+    @IsTest static void deletingScheduledJobCancelsItsSchedule() {
+        EnvironmentSafetyService.sandboxOverrideForTests=true;
+        MaskingJobManagerService.JobInput input=new MaskingJobManagerService.JobInput();
+        input.name='Scheduled deletion';input.runMode='Once';input.objects=new List<String>{'Contact'};
+        Id jobId=MaskingJobManagerService.saveJob(input);
+        MaskingJobManagerService.scheduleJob(jobId,'daily',null,null,'03:00');
+        String scheduleName='PGSchedule_'+String.valueOf(jobId);
+        System.assertEquals(1,[SELECT COUNT() FROM CronTrigger
+            WHERE CronJobDetail.Name=:scheduleName AND State!='DELETED'],'The fixture needs an active schedule.');
+        MaskingJobManagerService.deleteJob(jobId);
+        System.assertEquals(0,[SELECT COUNT() FROM Masking_Job__c WHERE Id=:jobId],'The job should be deleted.');
+        System.assertEquals(0,[SELECT COUNT() FROM CronTrigger
+            WHERE CronJobDetail.Name=:scheduleName AND State!='DELETED'],'Job deletion must cancel its schedule.');
+    }
 }

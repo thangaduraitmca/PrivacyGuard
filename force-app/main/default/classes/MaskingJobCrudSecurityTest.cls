@@ -23,4 +23,25 @@ private class MaskingJobCrudSecurityTest {
             System.assert(deleteBlocked, 'Deleting must be blocked without object permissions.');
         }
     }
+    @IsTest static void jobReadsAndScheduleCancellationEnforceObjectAccess() {
+        PrivacyGuardSecurityService.bypassPermissionChecksForTests=true;
+        EnvironmentSafetyService.sandboxOverrideForTests=true;
+        Profile p=[SELECT Id FROM Profile WHERE Name='Standard User' LIMIT 1];
+        Masking_Job__c protectedJob=new Masking_Job__c(Job_Name__c='Protected schedule parent');
+        insert protectedJob;
+        String login='pg-job-read-'+String.valueOf(DateTime.now().getTime())+'@example.invalid';
+        User limited=new User(Alias='pgjread',Email=login,EmailEncodingKey='UTF-8',
+            LastName='Job Read Access',LanguageLocaleKey='en_US',LocaleSidKey='en_US',
+            ProfileId=p.Id,TimeZoneSidKey='America/Los_Angeles',UserName=login);
+        System.runAs(limited) {
+            System.assertEquals(false,Masking_Job__c.SObjectType.getDescribe().isAccessible(),
+                'The profile must lack job read access.');
+            Integer blocked=0;
+            try { MaskingJobManagerService.getJobs(); } catch (QueryException ex) { blocked++; }
+            try { MaskingJobManagerService.getConfiguredObjects(); } catch (QueryException ex) { blocked++; }
+            try { MaskingJobManagerService.getLatestRun(null); } catch (QueryException ex) { blocked++; }
+            try { MaskingJobManagerService.cancelJobSchedule(protectedJob.Id); } catch (QueryException ex) { blocked++; }
+            System.assertEquals(4,blocked,'Read and schedule cancellation endpoints must enforce CRUD independently of custom permissions.');
+        }
+    }
 }

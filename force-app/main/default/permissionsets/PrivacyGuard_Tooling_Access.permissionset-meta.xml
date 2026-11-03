@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<PermissionSet xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Allows approved users to use the PrivacyGuard per-user Tooling OAuth principal. Assign alongside the existing PrivacyGuard metadata administration permissions. Each user must authenticate separately.</description>
+    <externalCredentialPrincipalAccesses>
+        <enabled>true</enabled>
+        <externalCredentialPrincipal>privacyguard__PrivacyGuard_Tooling_OAuth-PrivacyGuard_User</externalCredentialPrincipal>
+    </externalCredentialPrincipalAccesses>
+    <hasActivationRequired>false</hasActivationRequired>
+    <label>PrivacyGuard Tooling Access</label>
+</PermissionSet>

@@ -21,6 +21,7 @@
 private with sharing class MaskingConfigServiceTest {
     @TestSetup
     static void setupMaskingConfiguration() {
+        PrivacyGuardPackageTestAccess.grantAdmin();
         MaskingTestConfiguration.createDefaults();
     }
 

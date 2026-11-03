@@ -13,11 +13,11 @@ public without sharing class PrivacyGuardAuditService {
         return 'Data Masking';
     }
     public static void record(String category,String action,Id target,String message) {
-        insert new Masking_Log__c(Job_Name__c='Audit_'+category,Activity_Category__c=category,Activity_Action__c=action,
+        insert as system new Masking_Log__c(Job_Name__c='Audit_'+category,Activity_Category__c=category,Activity_Action__c=action,
             Record_Id__c=target==null?null:String.valueOf(target),Status__c='Success',Error_Message__c=message);
     }
     public static void recordFailure(String category,String action,Id target,String message) {
-        insert new Masking_Log__c(Job_Name__c='Audit_'+category,Activity_Category__c=category,Activity_Action__c=action,
+        insert as system new Masking_Log__c(Job_Name__c='Audit_'+category,Activity_Category__c=category,Activity_Action__c=action,
             Record_Id__c=target==null?null:String.valueOf(target),Status__c='Failed',Error_Message__c=message.left(32768));
     }
     public static void capture(String category, List<SObject> records, Map<Id,SObject> prior, String action) {
@@ -51,6 +51,6 @@ public without sharing class PrivacyGuardAuditService {
         }
         // System-context write is intentional: normal configuration editors cannot forge audit fields.
         // Any persistence failure rolls back the originating configuration transaction.
-        if(!logs.isEmpty()) insert logs;
+        if(!logs.isEmpty()) insert as system logs;
     }
 }

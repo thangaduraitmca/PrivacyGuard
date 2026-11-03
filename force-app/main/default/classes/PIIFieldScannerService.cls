@@ -39,6 +39,7 @@ public with sharing class PIIFieldScannerService {
         return scanWithClassifications(objectApiName,scanBatchId,true);
     }
     private static List<PII_Scan_Result__c> scanWithClassifications(String objectApiName,String scanBatchId,Boolean includeNative) {
+        PrivacyGuardSecurityService.requirePiiPermission();
         List<PII_Scan_Result__c> findings = new List<PII_Scan_Result__c>();
 
         Schema.SObjectType sobjType = Schema.getGlobalDescribe().get(objectApiName);
@@ -47,6 +48,7 @@ public with sharing class PIIFieldScannerService {
         }
 
         Schema.DescribeSObjectResult objDescribe = sobjType.getDescribe();
+        if (!objDescribe.isAccessible()) return findings;
         Set<String> alreadyConfigured = getConfiguredFieldKeys();
         Map<String,ComplianceCategorizationService.ComplianceInfo> nativeTags = includeNative
             ? ComplianceCategorizationService.getComplianceTags(objectApiName)
@@ -57,6 +59,7 @@ public with sharing class PIIFieldScannerService {
 
         for (Schema.SObjectField field : objDescribe.fields.getMap().values()) {
             Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
+            if (!fieldDescribe.isAccessible()) continue;
             String fieldApiName = fieldDescribe.getName();
             String fieldLabel = fieldDescribe.getLabel();
             Schema.DisplayType fieldType = fieldDescribe.getType();
@@ -140,7 +143,7 @@ public with sharing class PIIFieldScannerService {
         List<String> values = new List<String>();
         Map<String, Boolean> orgState = new Map<String, Boolean>();
         Map<String, String> orgValue = new Map<String, String>();
-        for (PII_Keyword_Config__c k : [SELECT Keyword__c, Is_Active__c FROM PII_Keyword_Config__c]) {
+        for (PII_Keyword_Config__c k : [SELECT Keyword__c, Is_Active__c FROM PII_Keyword_Config__c WITH USER_MODE ]) {
             if (String.isBlank(k.Keyword__c)) continue;
             String key = normalizeForKeywordMatch(k.Keyword__c);
             orgState.put(key, k.Is_Active__c);
@@ -169,7 +172,7 @@ public with sharing class PIIFieldScannerService {
             ]) {
                 cachedConfiguredKeys.add((cfg.Object_API_Name__c + '.' + cfg.Field_API_Name__c).toLowerCase());
             }
-            for (Masking_Field_Config__c cfg : [SELECT Object_API_Name__c, Field_API_Name__c FROM Masking_Field_Config__c]) {
+            for (Masking_Field_Config__c cfg : [SELECT Object_API_Name__c, Field_API_Name__c FROM Masking_Field_Config__c WITH USER_MODE ]) {
                 cachedConfiguredKeys.add((cfg.Object_API_Name__c + '.' + cfg.Field_API_Name__c).toLowerCase());
             }
         }

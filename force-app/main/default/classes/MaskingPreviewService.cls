@@ -22,9 +22,9 @@ public with sharing class MaskingPreviewService {
     @AuraEnabled public static PreviewResult preview(Id jobId, String objectApiName) {
         PrivacyGuardSecurityService.requireRunPermission();
         if (jobId == null || String.isBlank(objectApiName)) throw error('Select a job and object to preview.');
-        Masking_Job__c job=[SELECT Run_Mode__c FROM Masking_Job__c WHERE Id=:jobId LIMIT 1];
+        Masking_Job__c job=[SELECT Run_Mode__c FROM Masking_Job__c WHERE Id=:jobId WITH USER_MODE LIMIT 1];
         List<Masking_Job_Object__c> selected=[SELECT Delta_Tracking_Field__c FROM Masking_Job_Object__c
-            WHERE Masking_Job__c=:jobId AND Object_API_Name__c=:objectApiName AND Is_Active__c=true LIMIT 1];
+            WHERE Masking_Job__c=:jobId AND Object_API_Name__c=:objectApiName AND Is_Active__c=true WITH USER_MODE LIMIT 1];
         if (selected.isEmpty()) throw error('This object is not active in the selected job.');
         if (job.Run_Mode__c!='Full' && job.Run_Mode__c!='Once') throw error('Choose Full or Unmasked records only before previewing this job.');
         Schema.DescribeSObjectResult obj=SchemaValidationUtil.requireValidObject(objectApiName);

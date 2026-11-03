@@ -4,7 +4,7 @@ public with sharing class PrivacyGuardHomeController {
     public static Overview getOverview() {
         PrivacyGuardSecurityService.requirePiiPermission();
         Overview result = new Overview();
-        result.environmentName = [SELECT Name FROM Organization LIMIT 1].Name;
+        result.environmentName = [SELECT Name FROM Organization WITH USER_MODE LIMIT 1].Name;
         result.acceptedFields = 0;
         result.protectedFields = 0;
         result.reviewFields = 0;
@@ -25,16 +25,17 @@ public with sharing class PrivacyGuardHomeController {
         Set<String> reviewedKeys = new Set<String>();
         Boolean scanAvailable = true;
         try {
-            String scanObject = PII_Scan_Result__c.SObjectType.getDescribe().getName();
-            String scanObjField = fieldName(PII_Scan_Result__c.SObjectType, 'Object_API_Name__c');
-            String scanFieldField = fieldName(PII_Scan_Result__c.SObjectType, 'Field_API_Name__c');
-            String scanStatusField = fieldName(PII_Scan_Result__c.SObjectType, 'Review_Status__c');
-            for (SObject row : Database.query('SELECT ' + scanObjField + ', ' + scanFieldField + ', ' + scanStatusField +
-                ' FROM ' + scanObject + ' WITH USER_MODE ORDER BY CreatedDate DESC, Id DESC LIMIT 50000')) {
-                String key = coverageKey(String.valueOf(row.get(scanObjField)), String.valueOf(row.get(scanFieldField)));
+            // Static references are namespace-aware in managed packages and avoid
+            // constructing SOQL identifiers from describe-map aliases.
+            for (PII_Scan_Result__c row : [
+                SELECT Object_API_Name__c, Field_API_Name__c, Review_Status__c
+                FROM PII_Scan_Result__c WITH USER_MODE
+                ORDER BY CreatedDate DESC, Id DESC LIMIT 50000
+            ]) {
+                String key = coverageKey(row.Object_API_Name__c, row.Field_API_Name__c);
                 if (key == null || reviewedKeys.contains(key)) continue;
                 reviewedKeys.add(key);
-                String status = String.valueOf(row.get(scanStatusField));
+                String status = row.Review_Status__c;
                 if (status == 'Accepted') acceptedKeys.add(key);
                 else if (status == 'New') pendingKeys.add(key);
             }
@@ -48,15 +49,14 @@ public with sharing class PrivacyGuardHomeController {
             System.debug(LoggingLevel.WARN, 'PrivacyGuard dashboard PII scan query failed: ' + ex.getMessage());
         }
 
-        String configObject = Masking_Field_Config__c.SObjectType.getDescribe().getName();
-        String configObjField = fieldName(Masking_Field_Config__c.SObjectType, 'Object_API_Name__c');
-        String configFieldField = fieldName(Masking_Field_Config__c.SObjectType, 'Field_API_Name__c');
-        String configActiveField = fieldName(Masking_Field_Config__c.SObjectType, 'Is_Active__c');
         Set<String> configuredKeys = new Set<String>();
         Set<String> configuredObjects = new Set<String>();
-        for (SObject row : Database.query('SELECT ' + configObjField + ', ' + configFieldField + ' FROM ' + configObject + ' WHERE ' + configActiveField + ' = true WITH USER_MODE LIMIT 50000')) {
-            String objectApi = String.valueOf(row.get(configObjField));
-            String key = coverageKey(objectApi, String.valueOf(row.get(configFieldField)));
+        for (Masking_Field_Config__c row : [
+            SELECT Object_API_Name__c, Field_API_Name__c FROM Masking_Field_Config__c
+            WHERE Is_Active__c = true WITH USER_MODE LIMIT 50000
+        ]) {
+            String objectApi = row.Object_API_Name__c;
+            String key = coverageKey(objectApi, row.Field_API_Name__c);
             if (key == null) continue;
             configuredKeys.add(key);
             configuredObjects.add(objectApi.trim().toLowerCase());
@@ -71,47 +71,26 @@ public with sharing class PrivacyGuardHomeController {
 
         Boolean runsAvailable = true;
         try {
-            Schema.DescribeSObjectResult runDescribe = Masking_Job_Run__c.SObjectType.getDescribe();
-            if (!runDescribe.isAccessible()) {
-                throw new AuraHandledException('Read access to Masking Job Run is required.');
-            }
-            String runObject = runDescribe.getName();
-            String runStatusField = fieldName(Masking_Job_Run__c.SObjectType, 'Status__c');
-            String runStartedField = fieldName(Masking_Job_Run__c.SObjectType, 'Started_At__c');
-            Map<String, Schema.SObjectField> runFields = runDescribe.fields.getMap();
-            for (String requiredField : new List<String>{runStatusField, runStartedField}) {
-                Boolean accessible = false;
-                for (Schema.SObjectField fieldToken : runFields.values()) {
-                    Schema.DescribeFieldResult fieldDescribe = fieldToken.getDescribe();
-                    if (fieldDescribe.getName().equalsIgnoreCase(requiredField)) {
-                        accessible = fieldDescribe.isAccessible();
-                        break;
-                    }
-                }
-                if (!accessible) {
-                    throw new AuraHandledException('Read access to Masking Job Run field ' + requiredField + ' is required.');
-                }
-            }
-            // Aggregate all accessible runs rather than counting only the 100 most recent.
-            for (AggregateResult aggregateRow : Database.query(
-                'SELECT ' + runStatusField + ' runStatus, COUNT(Id) runCount FROM ' + runObject +
-                ' WITH USER_MODE GROUP BY ' + runStatusField
-            )) {
+            // Aggregate every visible run; do not derive totals from the recent list.
+            for (AggregateResult aggregateRow : [
+                SELECT Status__c runStatus, COUNT(Id) runCount FROM Masking_Job_Run__c
+                WITH USER_MODE GROUP BY Status__c
+            ]) {
                 String status = String.valueOf(aggregateRow.get('runStatus'));
                 Integer count = (Integer)aggregateRow.get('runCount');
                 if (status == 'Completed') result.completedRuns += count;
                 if (status == 'Failed' || status == 'Completed with Errors') result.failedRuns += count;
             }
             // Recent-run list is independent of the aggregate totals.
-            for (SObject job : Database.query(
-                'SELECT Id, Name, ' + runStatusField + ', ' + runStartedField +
-                ' FROM ' + runObject + ' WITH USER_MODE ORDER BY CreatedDate DESC LIMIT 5'
-            )) {
+            for (Masking_Job_Run__c job : [
+                SELECT Id, Name, Status__c, Started_At__c FROM Masking_Job_Run__c
+                WITH USER_MODE ORDER BY CreatedDate DESC LIMIT 5
+            ]) {
                 RunRow row = new RunRow();
-                row.id = (Id)job.get('Id');
-                row.name = String.valueOf(job.get('Name'));
-                row.status = String.valueOf(job.get(runStatusField));
-                Datetime started = (Datetime)job.get(runStartedField);
+                row.id = job.Id;
+                row.name = job.Name;
+                row.status = job.Status__c;
+                Datetime started = job.Started_At__c;
                 row.started = started == null ? 'Date unavailable' : started.format();
                 result.recentRuns.add(row);
             }
@@ -134,8 +113,19 @@ public with sharing class PrivacyGuardHomeController {
             result.privacyStatus = 'Configuration Ready';
             result.privacyExplanation = 'All accepted PII fields have active configuration and a completed run exists. Verify execution logs to confirm actual masking.';
         }
-        List<AsyncApexJob> scans = [SELECT CompletedDate FROM AsyncApexJob WHERE ApexClass.Name = 'PIIFieldScannerBatch' AND Status = 'Completed' ORDER BY CompletedDate DESC LIMIT 1];
-        if (!scans.isEmpty() && scans[0].CompletedDate != null) result.lastScanDate = scans[0].CompletedDate.format();
+        try {
+            List<AsyncApexJob> scans = [
+                SELECT CompletedDate FROM AsyncApexJob
+                WHERE ApexClass.Name = 'PIIFieldScannerBatch' AND Status = 'Completed'
+                WITH USER_MODE ORDER BY CompletedDate DESC LIMIT 1
+            ];
+            if (!scans.isEmpty() && scans[0].CompletedDate != null) {
+                result.lastScanDate = scans[0].CompletedDate.format();
+            }
+        } catch (QueryException ex) {
+            String warning = 'Last scan date is unavailable with your current permissions.';
+            result.dataWarning = String.isBlank(result.dataWarning) ? warning : result.dataWarning + ' ' + warning;
+        }
         return result;
     }
 
@@ -146,33 +136,6 @@ public with sharing class PrivacyGuardHomeController {
         return objectApi.trim().toLowerCase() + '.' + fieldApi.trim().toLowerCase();
     }
 
-    // Resolve either local or namespace-qualified names from the actual org schema.
-    // Managed-package describe maps can expose keys differently across contexts.
-    private static String fieldName(Schema.SObjectType objectType, String localName) {
-        Map<String, Schema.SObjectField> fields = PrivacyGuardSchema.fields(objectType.getDescribe());
-        String objectApi = objectType.getDescribe().getName();
-        String namespacePrefix = '';
-        Integer separator = objectApi.indexOf('__');
-        if (separator > 0) namespacePrefix = objectApi.substring(0, separator) + '__';
-
-        List<String> candidates = new List<String>{ localName };
-        if (namespacePrefix != '') candidates.add(namespacePrefix + localName);
-        for (String candidate : candidates) {
-            if (fields.containsKey(candidate)) {
-                return fields.get(candidate).getDescribe().getName();
-            }
-        }
-        // Use the field's described API name, not assumptions about map keys.
-        for (Schema.SObjectField token : fields.values()) {
-            String actual = token.getDescribe().getName();
-            if (actual.equalsIgnoreCase(localName) ||
-                (namespacePrefix != '' && actual.equalsIgnoreCase(namespacePrefix + localName)) ||
-                actual.toLowerCase().endsWith('__' + localName.toLowerCase())) {
-                return actual;
-            }
-        }
-        throw new AuraHandledException('PrivacyGuard schema mismatch: missing ' + localName + ' on ' + objectApi);
-    }
     public class Overview {
         @AuraEnabled public String environmentName {get;set;}
         @AuraEnabled public String dataWarning {get;set;}
