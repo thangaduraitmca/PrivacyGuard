@@ -1,8 +1,24 @@
-# PrivacyGuard — Salesforce Data Masking Framework
+# PrivacyGuard — Salesforce Sandbox Data Masking
 
 PrivacyGuard helps Salesforce administrators discover potentially sensitive fields, define masking policies, and prepare sandbox data for development, testing, and training. It combines a Lightning administration workspace with configurable masking strategies, asynchronous processing, execution history, and controlled Apex Trigger management.
 
 The framework runs within Salesforce. Masking replaces selected field values in place; it does not create a separate anonymised copy or provide a reversal mechanism. Administrators remain responsible for reviewing scope, validating results, and controlling access to the sandbox.
+
+## Documentation
+
+Use the [documentation index](docs/README.md) for the complete guide collection.
+
+| Document | Audience and purpose |
+| --- | --- |
+| [Installation and administrator guide](docs/guides/PrivacyGuard-Installation-and-Administrator-Guide.md) | Installation, permissions, operations and recovery |
+| [End-user guide](docs/guides/PrivacyGuard-End-User-Guide.md) | Discovery, configuration, execution and monitoring |
+| [OAuth post-install guide](docs/integrations/PrivacyGuard-OAuth-Post-Install-Guide.md) | Customer credential setup and per-user authorization |
+| [API callout documentation](docs/integrations/PrivacyGuard-API-Callout-Documentation.md) | Endpoints, payloads, trust boundaries and error handling |
+| [Solution architecture and data flows](docs/architecture/PrivacyGuard-Solution-Architecture-and-Data-Flows.md) | Technical design and data movement |
+| [Business capability map](docs/architecture/PrivacyGuard-Business-Capability-Map.pdf) | Capability overview |
+| [Consolidated security findings and justifications](docs/security/PrivacyGuard-Consolidated-Security-Findings-and-Justifications.md) | Finding-by-finding assessment, evidence and pending checks |
+
+These relative links use the structured `docs/` layout supplied with the documentation bundle. Preserve that layout when adding documents to this repository.
 
 ## Purpose and scope
 
@@ -75,7 +91,7 @@ Discovery does not overwrite business-record field values, but it does store fin
 | Unmasked records only | Process records whose configured completion checkbox is not checked. | Check the flag after successful masking; subsequent runs skip flagged records. |
 | Recovery Rerun | Retry records identified by failure logs from an eligible previous run. | Apply the normal masking and completion logic to the recovery scope. |
 
-Each participating object needs an editable completion checkbox. The standard framework field is Data_Masking_Complete__c; administrators must ensure an appropriate field is available and accessible on every selected object.
+Each participating object needs an editable completion checkbox, including jobs in Full mode. The framework resolves the applicable packaged or subscriber `Data_Masking_Complete__c` field, or the configured checkbox. Ensure the correct field is available and accessible on every selected object, and do not configure it as a masking target.
 
 A completion checkbox records that masking succeeded. It does not detect whether an integration or user later replaces masked values with sensitive data. Use Full mode when previously completed records need masking again.
 
@@ -102,6 +118,14 @@ Formula fields and picklist fields are not supported masking targets. Read-only 
 
 Random replacements are not a guarantee of uniqueness or consistent values across related records. Validate business and relationship requirements before selecting a strategy.
 
+## Preview and file handling
+
+Masking preview is read-only and supports built-in strategies. It reads at most five records and up to 100 configured masking fields; displayed values are truncated to 500 characters. Preview can expose original field values to the authorized operator, so restrict access accordingly. It does not test DML success, validation rules or downstream automation.
+
+Attachment & File Manager supports inventory and confirmed deletion. Deleting a Salesforce `ContentDocument` affects all its versions and record links; it is not simply unlinking one selected record. Legacy Attachment deletion affects the selected attachment. Review inventory and scope before confirming deletion.
+
+The object-related scan/purge path currently accepts up to 10 objects per request. This limit is distinct from the collected-file inventory workflow and remains a current implementation constraint.
+
 ## Apex Trigger management
 
 Supported automation metadata management is limited to Apex Triggers. Namespaced triggers are read-only and cannot be changed through PrivacyGuard, including triggers carrying the PrivacyGuard namespace.
@@ -113,6 +137,22 @@ Queued or in-progress requests are not reported as successful deactivations. A r
 Trigger deactivation and restoration are explicit administrative operations. Creating or running a masking job is not evidence that all Salesforce automation has been disabled. Legacy bypass settings affect only automation that has been designed to honour those flags; they do not universally suspend automation.
 
 Flow and Validation Rule metadata changes are not part of the supported automation management workspace. Legacy implementation elements may remain in the repository and must not be treated as supported product capabilities.
+
+## OAuth and same-sandbox API access
+
+Trigger metadata operations use the customer-configured Named Credential `PrivacyGuard_Tooling` and Salesforce Tooling API v66.0. Apex does not embed OAuth client secrets or construct session-based bearer headers. Salesforce credential infrastructure supplies authorization.
+
+After managed installation, the administrator must configure the customer External Client App and installed provider, create or configure the Named Credential, connect it to the installed External Credential, allow namespace `privacyguard`, assign principal access and complete per-user OAuth authorization. Scopes are `api refresh_token`; platform permissions and the separate metadata-operation custom permission also apply. OAuth tokens are not distributed with the package.
+
+Before Tooling operations, the client verifies that the remote organization ID matches the executing organization and that it is a sandbox. The Named Credential URL must use the exact sandbox My Domain API hostname, not the Lightning UI hostname. Each request has a 20-second timeout. Trigger deployments persist their request ID, poll status and verify the actual final trigger state; an interrupted status check can leave the outcome unknown and requires reconciliation.
+
+Follow the [post-install guide](docs/integrations/PrivacyGuard-OAuth-Post-Install-Guide.md) and [API register](docs/integrations/PrivacyGuard-API-Callout-Documentation.md). A successful package install alone does not establish that OAuth or trigger deployment works.
+
+## Cooperative bypass restoration
+
+Masking runs persist the prior four bypass flags and an ownership marker before applying cooperative bypass. Runtime runs use their run ID as owner. Completion, failure reconciliation and cancellation attempt to restore the saved values; changes to false made by an administrator during execution are preserved. Wrong-owner restoration and invalid snapshots are rejected rather than blindly clearing flags.
+
+The flags affect only subscriber automation that explicitly consults them. They do not replace explicit trigger restoration. An administrator deliberately re-saving true cannot be distinguished from the value applied by PrivacyGuard. The legacy no-argument orchestrator uses a fixed owner and does not provide a per-generation completion token. Public-setting access and stale/duplicate legacy completion require separate assessment. Abandoned runs depend on reconciliation; no autonomous recovery watchdog is claimed.
 
 ## Security and environment safeguards
 
@@ -157,11 +197,35 @@ Use a sandbox without a namespace for rapid source deployment and functional tes
 
 GitHub is the version-controlled source of record. Keep source, metadata companions, tests, and documentation together, and associate package builds with the reviewed source revision. Package IDs and installation links belong in version-specific release information rather than this framework overview.
 
+## Source deployment versus managed installation
+
+The OAuth principal reference differs between the unmanaged source-testing environment and the namespaced managed build. A source deployment to an unmanaged sandbox may require the unprefixed credential-principal reference; the package-ready source uses the verified namespaced reference. Keep environment transformations separate from release source and review the diff before committing. Do not distribute manual XML edits as a customer installation step.
+
+A source deployment updates the target sandbox; it does not update an already-created managed version. Build a new version after final code changes and validate a clean subscriber installation separately. Production installation does not enable production masking or production trigger changes.
+
 ## Validation and release readiness
 
 Before promoting a package version, verify full-source deployment with local Apex tests, applicable coverage requirements, functional smoke tests, and managed-package installation testing. Include permission boundaries, production blocking, completion tracking, failure recovery, trigger state verification, and representative data volumes in the validation scope.
 
-The latest development validation reported a successful full-source deployment to the PGTEST sandbox. This is an environment-specific result, not a statement that every future source revision or package version has been validated.
+As of the 4 November 2026 documentation baseline, the project owner reports successful deployment to PGTEST. The supplied `PrivacyGuardInternalAuthorizationTest` log shows two negative-authorization scenarios completing without assertion failures or fatal errors. The tests exercise seven bypass/tracker entry paths per scenario with real permission checks enabled. This evidence does not establish that the entire regression suite, direct-setting access checks or installed-package OAuth cases passed.
+
+### Security-review status
+
+The latest reviewed Code Analyzer CSV contains **23 findings: 15 high and eight moderate**, comprising 12 CRUD warnings, three dynamic-SOQL warnings and eight potential-auth-token warnings. Query hardening did not remove the three SOQL warnings from the subsequent scan.
+
+The [consolidated register](docs/security/PrivacyGuard-Consolidated-Security-Findings-and-Justifications.md) records proposed false positives, intentional privileged operations and outstanding validation. Documentation is not a blanket waiver, a clean scan or Salesforce approval. Direct access to public bypass state, keyword CRUD/FLS boundaries, legacy completion behavior and final package/source matching remain relevant checks. A Checkmarx report has not been supplied for this documentation baseline.
+
+Before release or security-review submission:
+
+1. Match source commit, package version, reports and tests to the exact candidate release.
+2. Run local Apex tests and retain formal results, including authorization, malicious-input, CRUD/FLS and environment-boundary cases.
+3. Review Code Analyzer engine/processing errors, selected rules, configuration and exclusions, and retain HTML/CSV reports with scan logs.
+4. Assess remaining implementation concerns; fix genuine defects and supply finding-specific evidence for proposed false positives.
+5. Complete Checkmarx and review its findings independently.
+6. Validate managed installation, permissions, OAuth, same-org verification and trigger restoration in the subscriber test environment.
+7. Confirm promotion status and the current Salesforce submission requirements. Package release and Salesforce security-review approval are separate milestones.
+
+Keep credentials, tokens, customer data and unredacted debug logs out of Git. Store reviewed documentation under `docs/`; add only sanitized evidence through the project's approved process.
 
 ## Limitations and operational responsibilities
 

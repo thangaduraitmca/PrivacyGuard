@@ -107,7 +107,8 @@ public with sharing class FileAttachmentPurgeController {
         for (String apiName : objectApiNames) {
             try {
                 requireEligibleObject(apiName);
-                String canonical = Schema.getGlobalDescribe().get(apiName).getDescribe().getName();
+                String canonical = SchemaValidationUtil.requireSoqlIdentifier(
+                    Schema.getGlobalDescribe().get(apiName).getDescribe().getName());
                 ScanRow row = new ScanRow();
                 row.objectName = apiName;
                 row.attachmentCount = Database.countQuery(

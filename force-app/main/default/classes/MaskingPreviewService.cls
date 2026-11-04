@@ -46,12 +46,12 @@ public with sharing class MaskingPreviewService {
                 !cfg.strategyClass.equalsIgnoreCase('privacyguard.'+builtIn))) {
                 throw error('Preview supports built-in strategies only. Review '+cfg.fieldApiName+'.');
             }
-            names.add(field.getName());
+            names.add(SchemaValidationUtil.requireSoqlIdentifier(field.getName()));
         }
-        String soql='SELECT '+String.join(new List<String>(names),',')+' FROM '+obj.getName();
+        String soql='SELECT '+String.join(new List<String>(names),',')+' FROM '+SchemaValidationUtil.requireSoqlIdentifier(obj.getName());
         if(job.Run_Mode__c=='Once') {
             if(!PrivacyGuardSchema.fields(obj).get(flag).getDescribe().isAccessible()) throw error('Read access to the completion checkbox is required for preview.');
-            soql+=' WHERE '+flag+' = false';
+            soql+=' WHERE '+SchemaValidationUtil.requireSoqlIdentifier(flag)+' = false';
         }
         // USER_MODE enforces sharing and field permissions, including the filter field.
         soql+=' WITH USER_MODE ORDER BY Id LIMIT 5';

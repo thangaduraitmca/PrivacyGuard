@@ -97,4 +97,19 @@ private with sharing class SchemaValidationUtilTest {
         Schema.DescribeFieldResult readonlyField = Account.Id.getDescribe();
         System.assert(!SchemaValidationUtil.isSupportedMaskingField(readonlyField));
     }
+
+    @IsTest static void rejectsQueryFragmentsAsIdentifiers() {
+        for (String value : new List<String>{null, '', 'Contact WHERE Id != null',
+            'Name,Email', 'Owner.Name', 'Contact/**/', 'Name\' OR Name != null',
+            'Contact LIMIT 1', 'Contact\nWHERE', ' Contact', 'Contact '}) {
+            Boolean blocked = false;
+            try { SchemaValidationUtil.requireSoqlIdentifier(value); }
+            catch (SchemaValidationUtil.InvalidSchemaReferenceException ex) { blocked = true; }
+            System.assert(blocked, 'Query fragments must never be accepted: ' + value);
+        }
+        System.assertEquals('Contact', SchemaValidationUtil.requireSoqlIdentifier(
+            Contact.SObjectType.getDescribe().getName()));
+        System.assertEquals('privacyguard__Data_Masking_Complete__c',
+            SchemaValidationUtil.requireSoqlIdentifier('privacyguard__Data_Masking_Complete__c'));
+    }
 }

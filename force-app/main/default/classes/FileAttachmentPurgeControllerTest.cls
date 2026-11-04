@@ -52,4 +52,13 @@ private with sharing class FileAttachmentPurgeControllerTest {
         System.assert(threw, 'Expected an AuraHandledException when blocked outside a Sandbox');
         System.assertEquals(1, [SELECT COUNT() FROM Attachment], 'Nothing should be deleted when blocked');
     }
+
+    @IsTest static void scanRejectsInjectedObjectWithoutDeletingData() {
+        EnvironmentSafetyService.sandboxOverrideForTests = true;
+        List<FileAttachmentPurgeController.ScanRow> rows =
+            FileAttachmentPurgeController.scanObjects(new List<String>{'Contact WHERE Id != null'});
+        System.assertEquals(1, rows.size());
+        System.assert(String.isNotBlank(rows[0].warning), 'Invalid selection must return a blocked warning.');
+        System.assertEquals(1, [SELECT count() FROM Attachment], 'Scanning must not delete data.');
+    }
 }

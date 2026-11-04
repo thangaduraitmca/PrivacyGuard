@@ -25,6 +25,18 @@ public with sharing class SchemaValidationUtil {
 
     public class InvalidSchemaReferenceException extends Exception {}
 
+    /** Accept one schema-resolved API name, never a SOQL expression or relationship path.
+     * Callers must first resolve names through Describe; this is an additional grammar guard.
+     */
+    public static String requireSoqlIdentifier(String canonicalName) {
+        if (String.isBlank(canonicalName) ||
+            !Pattern.matches('^[A-Za-z][A-Za-z0-9_]*$', canonicalName)) {
+            throw new InvalidSchemaReferenceException('Invalid SOQL identifier.');
+        }
+        return canonicalName;
+    }
+
+
     /** Returns the describe result for objectApiName, or throws if it isn't a real, describable SObject. */
     public static Schema.DescribeSObjectResult requireValidObject(String objectApiName) {
         if (String.isBlank(objectApiName)) {

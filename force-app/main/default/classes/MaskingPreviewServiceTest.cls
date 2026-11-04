@@ -52,4 +52,17 @@ private class MaskingPreviewServiceTest {
         MaskingPreviewService.PreviewResult result=MaskingPreviewService.preview(jobId(),'Contact');
         System.assertEquals(0,result.sampleCount);System.assert(result.rows.isEmpty());
     }
+
+    @IsTest static void rejectsInjectedObjectEvenWhenStoredInJob() {
+        String injected = 'Contact WHERE Id != null';
+        Masking_Job_Object__c selection = [SELECT Id, Object_API_Name__c FROM Masking_Job_Object__c LIMIT 1];
+        selection.Object_API_Name__c = injected;
+        update selection;
+        Boolean blocked = false;
+        Integer beforeDml = Limits.getDmlStatements();
+        try { MaskingPreviewService.preview(jobId(), injected); }
+        catch (SchemaValidationUtil.InvalidSchemaReferenceException ex) { blocked = true; }
+        System.assert(blocked, 'Stored job configuration must not bypass schema validation.');
+        System.assertEquals(beforeDml, Limits.getDmlStatements(), 'Rejected preview must perform no DML.');
+    }
 }
