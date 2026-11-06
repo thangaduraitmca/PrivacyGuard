@@ -20,7 +20,7 @@
 public with sharing class ToolingApiClient {
 
     private static final String API_VERSION = 'v66.0';
-    private static final String ENDPOINT = 'callout:PrivacyGuard_Tooling';
+    private static final String ENDPOINT = 'callout:privacyguard__PrivacyGuard_Tooling';
     private static Boolean targetVerified = false;
 
     public class ToolingApiException extends Exception {}

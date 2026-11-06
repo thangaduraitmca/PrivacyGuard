@@ -17,7 +17,7 @@ private with sharing class ToolingApiClientTest {
     private class SuccessQueryMock implements HttpCalloutMock {
         public HttpResponse respond(HttpRequest req) {
             HttpResponse res = new HttpResponse();
-            System.assert(req.getEndpoint().startsWith('callout:PrivacyGuard_Tooling/'), 'Use only the fixed OAuth Named Credential endpoint.');
+            System.assert(req.getEndpoint().startsWith('callout:privacyguard__PrivacyGuard_Tooling/'), 'Use only the fixed OAuth Named Credential endpoint.');
             System.assertEquals(null,req.getHeader('Authorization'),'Apex must not construct an authorization header.');
             if (req.getEndpoint().contains('/query/?q=') && !req.getEndpoint().contains('/tooling/')) {
                 res.setStatusCode(200);
@@ -39,7 +39,7 @@ private with sharing class ToolingApiClientTest {
     private class FailureMock implements HttpCalloutMock {
         public HttpResponse respond(HttpRequest req) {
             HttpResponse res = new HttpResponse();
-            System.assert(req.getEndpoint().startsWith('callout:PrivacyGuard_Tooling/'), 'Use only the fixed OAuth Named Credential endpoint.');
+            System.assert(req.getEndpoint().startsWith('callout:privacyguard__PrivacyGuard_Tooling/'), 'Use only the fixed OAuth Named Credential endpoint.');
             System.assertEquals(null,req.getHeader('Authorization'),'Apex must not construct an authorization header.');
             if (req.getEndpoint().contains('/query/?q=') && !req.getEndpoint().contains('/tooling/')) {
                 res.setStatusCode(200);
@@ -111,7 +111,7 @@ private with sharing class ToolingApiClientTest {
         }
         public HttpResponse respond(HttpRequest req) {
             calls++;
-            System.assert(req.getEndpoint().startsWith('callout:PrivacyGuard_Tooling/'),'Use the fixed Named Credential.');
+            System.assert(req.getEndpoint().startsWith('callout:privacyguard__PrivacyGuard_Tooling/'),'Use the fixed Named Credential.');
             System.assertEquals(null,req.getHeader('Authorization'),'Apex must never set a bearer token.');
             HttpResponse response=new HttpResponse();
             if (req.getEndpoint().contains('/tooling/')) {

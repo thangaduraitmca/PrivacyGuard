@@ -10,7 +10,7 @@ private class AutomationTriggerProgressTest {
         }
         public HttpResponse respond(HttpRequest req) {
             HttpResponse res=new HttpResponse();
-            System.assert(req.getEndpoint().startsWith('callout:PrivacyGuard_Tooling/'), 'Use only the fixed OAuth Named Credential endpoint.');
+            System.assert(req.getEndpoint().startsWith('callout:privacyguard__PrivacyGuard_Tooling/'), 'Use only the fixed OAuth Named Credential endpoint.');
             System.assertEquals(null,req.getHeader('Authorization'),'Apex must not construct an authorization header.');
             if (req.getEndpoint().contains('/query/?q=') && !req.getEndpoint().contains('/tooling/')) {
                 res.setStatusCode(200);
