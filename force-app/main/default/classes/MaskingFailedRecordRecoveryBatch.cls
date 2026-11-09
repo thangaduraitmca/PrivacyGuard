@@ -58,6 +58,7 @@ public without sharing class MaskingFailedRecordRecoveryBatch
             SELECT Id, Record_Id__c FROM Masking_Log__c
             WHERE Run_Id__c = :parentRunKey AND Object_API_Name__c = :objectApiName
                 AND Status__c = 'Failed' AND Record_Id__c != null
+            WITH SYSTEM_MODE
             ORDER BY Record_Id__c ASC, Id ASC
         ]);
     }
@@ -82,10 +83,16 @@ public without sharing class MaskingFailedRecordRecoveryBatch
         Set<String> fields = new Set<String>{ 'Id' };
         for (MaskingConfigService.FieldConfig fc : fieldConfigs) fields.add(fc.fieldApiName);
         if (runMode != 'Delta') trackingField = MaskingCompletionService.requireCheckbox(objectApiName, trackingField);
-        if (String.isNotBlank(trackingField)) fields.add(trackingField);
+        if (String.isNotBlank(trackingField)) {
+            trackingField = PrivacyGuardSchema.name(objectDescribe, trackingField);
+            fields.add(trackingField);
+        }
         String soql = 'SELECT ' + String.join(new List<String>(fields), ',') +
             ' FROM ' + objectDescribe.getName() + ' WHERE Id IN :ids';
-        List<SObject> records = Database.query(soql);
+        // Match the sandbox-wide scope of the original masking run.
+        List<SObject> records = Database.queryWithBinds(
+            soql, new Map<String, Object>{ 'ids' => ids }, AccessLevel.SYSTEM_MODE
+        );
         // Use the exact existing field masking, DML and logging logic, but no
         // eligibility predicate: a retry is determined exclusively by failed logs.
         MaskingBatch processor = new MaskingBatch(jobName, objectApiName, fieldConfigs,

@@ -30,9 +30,8 @@
  *   SchemaValidationUtil before being concatenated into dynamic SOQL, closing the
  *   SOQL-injection surface that free-form object/field configuration would
  *   otherwise open up.
- * - This intentionally does NOT enforce field-level security on the masking writes
- *   (no WITH SECURITY_ENFORCED / stripInaccessible) - masking a field the running
- *   user isn't personally permitted to edit is the expected, desired behavior here.
+ * - Record sharing is bypassed for sandbox-wide coverage. Object and field
+ *   update permissions are checked before writing customer records.
  *
  * Supports three run modes:
  *   - Full: masks every record every run (original behavior).
@@ -169,8 +168,11 @@ public without sharing class MaskingBatch implements Database.Batchable<SObject>
         // Each batch chunk gets fresh instances; nothing is retained in Stateful state.
         Map<Integer, IMaskingStrategy> strategiesByIndex = new Map<Integer, IMaskingStrategy>();
         if (scope.isEmpty()) return;
-        Map<String, Schema.SObjectField> targetFields =
-            PrivacyGuardSchema.fields(scope[0].getSObjectType().getDescribe());
+        Schema.DescribeSObjectResult targetObject = scope[0].getSObjectType().getDescribe();
+        Map<String, Schema.SObjectField> targetFields = PrivacyGuardSchema.fields(targetObject);
+        Schema.SObjectField trackingToken = PrivacyGuardSchema.field(targetObject, trackingField);
+        Boolean canUpdateRecords = targetObject.isUpdateable() &&
+            trackingToken != null && trackingToken.getDescribe().isUpdateable();
         Map<String, Schema.DescribeFieldResult> staticFieldDescribes =
             new Map<String, Schema.DescribeFieldResult>();
 
@@ -179,6 +181,12 @@ public without sharing class MaskingBatch implements Database.Batchable<SObject>
             for (Integer fieldIndex = 0; fieldIndex < fieldConfigs.size(); fieldIndex++) {
                 MaskingConfigService.FieldConfig fc = fieldConfigs[fieldIndex];
                 try {
+                    Schema.SObjectField targetField = targetFields.get(fc.fieldApiName);
+                    if (!canUpdateRecords || targetField == null || !targetField.getDescribe().isUpdateable()) {
+                        throw new SchemaValidationUtil.InvalidSchemaReferenceException(
+                            'Insufficient access to update the masking object, field, or completion field.'
+                        );
+                    }
                     if ('NULL'.equalsIgnoreCase(fc.fieldType)) SchemaValidationUtil.validateMaskingTarget(scope[0].getSObjectType().getDescribe(), fc);
                     Object originalValue = record.get(fc.fieldApiName);
                     IMaskingStrategy strategy = strategiesByIndex.get(fieldIndex);

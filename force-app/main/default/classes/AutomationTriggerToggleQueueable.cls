@@ -73,9 +73,10 @@ public without sharing class AutomationTriggerToggleQueueable implements Queueab
                 }
                 if (targetStatus == 'Active') {
                     List<Deactivated_Automation__c> restored=[SELECT Id FROM Deactivated_Automation__c
-                        WHERE Component_Id__c=:triggerId AND Component_Type__c='APEX_TRIGGER' AND Reactivated__c=false];
+                        WHERE Component_Id__c=:triggerId AND Component_Type__c='APEX_TRIGGER' AND Reactivated__c=false WITH SYSTEM_MODE];
                     for (Deactivated_Automation__c row : restored) { row.Reactivated__c=true; row.Reactivated_Date__c=System.now(); }
-                    update restored;
+                    // Package-owned tracking record; users have read-only access by design.
+                    update as system restored;
                 }
                 saveProgress(track, 'Succeeded', 'Verified trigger state: ' + targetStatus + '.');
                 MaskingLogger.logInfo('AutomationTriggerToggleQueueable', triggerName + ' deployed ' + targetStatus + '. Request: ' + requestId);
@@ -106,7 +107,8 @@ public without sharing class AutomationTriggerToggleQueueable implements Queueab
         track.Deployment_Status__c=status;
         track.Deployment_Target__c=targetStatus;
         track.Deployment_Message__c=clip(message);
-        update track;
+        // Package-owned tracking record; users have read-only access by design.
+        update as system track;
     }
     private static String clip(String value) { return value == null ? null : value.left(32000); }
     public class ToggleException extends Exception {}

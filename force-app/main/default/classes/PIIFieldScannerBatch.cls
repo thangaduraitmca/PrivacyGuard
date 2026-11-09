@@ -49,12 +49,13 @@ public with sharing class PIIFieldScannerBatch implements Database.Batchable<Str
             try {
                 allFindings.addAll(PIIFieldScannerService.scanObject(objectApiName, bc.getJobId()));
             } catch (Exception e) {
-                MaskingLogger.logInfo('PIIFieldScannerBatch',
-                    'Skipped object ' + objectApiName + ' during PII scan: ' + e.getMessage());
+                MaskingLogger.queueLog('PIIFieldScannerBatch', null, null, null,
+                    'Skipped object ' + objectApiName + ' during PII scan: ' + e.getMessage(), 'Success');
             }
         }
+        MaskingLogger.flush();
         if (!allFindings.isEmpty()) {
-            insert allFindings;
+            insert as user allFindings;
         }
     }
 

@@ -58,7 +58,7 @@ private with sharing class EnvironmentSafetyServiceTest {
         settings.Allow_Run_In_Production__c = true;
         upsert settings;
 
-        System.assertEquals(true, PrivacyGuardSecurityService.hasProductionOverridePermission(),
+        System.assertEquals(false, PrivacyGuardSecurityService.hasProductionOverridePermission(),
             'This test exercises the former permission and setting together.');
         System.assertEquals(false, EnvironmentSafetyService.isExecutionAllowed());
         Boolean blocked = false;

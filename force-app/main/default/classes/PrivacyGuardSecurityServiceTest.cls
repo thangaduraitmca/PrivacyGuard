@@ -25,7 +25,7 @@ private class PrivacyGuardSecurityServiceTest {
         PrivacyGuardSecurityService.requireRunPermission();
         PrivacyGuardSecurityService.requirePurgePermission();
         PrivacyGuardSecurityService.requirePiiPermission();
-        System.assertEquals(true, PrivacyGuardSecurityService.hasProductionOverridePermission());
+        System.assertEquals(false, PrivacyGuardSecurityService.hasProductionOverridePermission());
         System.assertEquals(true, PrivacyGuardSecurityService.hasMetadataDeactivationPermission());
     }
 }

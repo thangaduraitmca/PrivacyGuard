@@ -100,6 +100,7 @@ public with sharing class MaskingJobOrchestrator {
             }
             Database.executeBatch(batchable, job.batchSize);
         }
+        MaskingLogger.flush();
 
         // Serial jobs: kick off only the first; each finish() advances the chain.
         if (!serialJobs.isEmpty()) {
@@ -114,6 +115,7 @@ public with sharing class MaskingJobOrchestrator {
         MaskingConfigService.JobConfig job = serialJobs[index];
         Database.Batchable<SObject> batchable = buildBatchable(job, fieldConfigsByObject);
         if (batchable == null) {
+            MaskingLogger.flush();
             decrementTrackerAndMaybeEnableAutomations();
             runSerialJobByIndex(serialJobs, index + 1, fieldConfigsByObject);
             return;
@@ -136,8 +138,9 @@ public with sharing class MaskingJobOrchestrator {
         // FIELD_MASKING
         List<MaskingConfigService.FieldConfig> fields = fieldConfigsByObject.get(job.objectApiName);
         if (fields == null || fields.isEmpty()) {
-            MaskingLogger.logError('MaskingJobOrchestrator', job.objectApiName, null, null,
-                'Skipped job ' + job.jobName + ': no active field configuration found for ' + job.objectApiName);
+            // Queued, not inserted: runJobs/runSerialJobByIndex flush once (no DML per job).
+            MaskingLogger.queueLog('MaskingJobOrchestrator', job.objectApiName, null, null,
+                'Skipped job ' + job.jobName + ': no active field configuration found for ' + job.objectApiName, 'Failed');
             return null;
         }
         return new MaskingBatch(job.jobName, job.objectApiName, fields, job.runMode, job.deltaTrackingField);

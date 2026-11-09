@@ -240,32 +240,32 @@
   <fieldPermissions>
     <field>Masking_Log__c.Error_Message__c</field>
     <readable>true</readable>
-    <editable>true</editable>
+    <editable>false</editable>
   </fieldPermissions>
   <fieldPermissions>
     <field>Masking_Log__c.Field_API_Name__c</field>
     <readable>true</readable>
-    <editable>true</editable>
+    <editable>false</editable>
   </fieldPermissions>
   <fieldPermissions>
     <field>Masking_Log__c.Job_Name__c</field>
     <readable>true</readable>
-    <editable>true</editable>
+    <editable>false</editable>
   </fieldPermissions>
   <fieldPermissions>
     <field>Masking_Log__c.Object_API_Name__c</field>
     <readable>true</readable>
-    <editable>true</editable>
+    <editable>false</editable>
   </fieldPermissions>
   <fieldPermissions>
     <field>Masking_Log__c.Record_Id__c</field>
     <readable>true</readable>
-    <editable>true</editable>
+    <editable>false</editable>
   </fieldPermissions>
   <fieldPermissions>
     <field>Masking_Log__c.Status__c</field>
     <readable>true</readable>
-    <editable>true</editable>
+    <editable>false</editable>
   </fieldPermissions>
   <fieldPermissions>
     <field>PII_Scan_Result__c.Already_Configured__c</field>
@@ -619,10 +619,10 @@
   </objectPermissions>
   <objectPermissions>
     <object>Masking_Log__c</object>
-    <allowCreate>true</allowCreate>
+    <allowCreate>false</allowCreate>
     <allowRead>true</allowRead>
-    <allowEdit>true</allowEdit>
-    <allowDelete>true</allowDelete>
+    <allowEdit>false</allowEdit>
+    <allowDelete>false</allowDelete>
     <viewAllRecords>true</viewAllRecords>
     <modifyAllRecords>false</modifyAllRecords>
   </objectPermissions>

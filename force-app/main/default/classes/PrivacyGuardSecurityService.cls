@@ -40,7 +40,8 @@ public with sharing class PrivacyGuardSecurityService {
     }
 
     public static Boolean hasProductionOverridePermission() {
-        return hasPermission(PROD_OVERRIDE_PERMISSION);
+        // Retained for compatibility only; never grants production access.
+        return false;
     }
 
     public static Boolean hasMetadataDeactivationPermission() {

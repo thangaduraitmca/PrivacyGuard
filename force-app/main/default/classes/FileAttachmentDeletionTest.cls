@@ -31,53 +31,19 @@ private with sharing class FileAttachmentDeletionTest {
         insert new ContentDocumentLink(ContentDocumentId = contentDocumentId, LinkedEntityId = c.Id, ShareType = 'V');
     }
 
-    @isTest
-    static void testAttachmentDeletionBatchDeletesAttachments() {
+    @isTest static void objectPurgeCannotDeleteEvenWithSandboxAccess() {
         EnvironmentSafetyService.sandboxOverrideForTests = true;
-        Contact c = [SELECT Id FROM Contact WHERE LastName = 'PurgeTestContact' LIMIT 1];
-        System.assertEquals(1, [SELECT COUNT() FROM Attachment WHERE ParentId = :c.Id]);
-
-        Test.startTest();
-        Database.executeBatch(new FileAttachmentDeletionBatch('Test_Attach_Purge', 'Contact', FileAttachmentDeletionBatch.MODE_ATTACHMENTS), 200);
-        Test.stopTest();
-
-        System.assertEquals(0, [SELECT COUNT() FROM Attachment WHERE ParentId = :c.Id]);
-    }
-
-    @isTest
-    static void testFileDeletionBatchDeletesContentDocuments() {
-        EnvironmentSafetyService.sandboxOverrideForTests = true;
-        Contact c = [SELECT Id FROM Contact WHERE LastName = 'PurgeTestContact' LIMIT 1];
-        System.assertEquals(1, [SELECT COUNT() FROM ContentDocumentLink WHERE LinkedEntityId = :c.Id]);
-
-        Test.startTest();
-        Database.executeBatch(new FileAttachmentDeletionBatch('Test_File_Purge', 'Contact', FileAttachmentDeletionBatch.MODE_FILES), 200);
-        Test.stopTest();
-
-        System.assertEquals(0, [SELECT COUNT() FROM ContentDocumentLink WHERE LinkedEntityId = :c.Id]);
-    }
-
-    @isTest
-    static void testPurgeServiceDeletesBothAttachmentsAndFiles() {
-        EnvironmentSafetyService.sandboxOverrideForTests = true;
-        Contact c = [SELECT Id FROM Contact WHERE LastName = 'PurgeTestContact' LIMIT 1];
-
-        Test.startTest();
-        FileAttachmentPurgeService.purgeForObjects(new List<String>{ 'Contact' }, true, true);
-        Test.stopTest();
-
-        System.assertEquals(0, [SELECT COUNT() FROM Attachment WHERE ParentId = :c.Id]);
-        System.assertEquals(0, [SELECT COUNT() FROM ContentDocumentLink WHERE LinkedEntityId = :c.Id]);
-    }
-
-    @isTest
-    static void testPurgeServiceNoOpWhenNothingSelected() {
-        EnvironmentSafetyService.sandboxOverrideForTests = true;
-        Test.startTest();
-        FileAttachmentPurgeService.purgeForObjects(new List<String>{ 'Contact' }, false, false);
-        Test.stopTest();
-        // No exception, and nothing deleted.
-        Contact c = [SELECT Id FROM Contact WHERE LastName = 'PurgeTestContact' LIMIT 1];
-        System.assertEquals(1, [SELECT COUNT() FROM Attachment WHERE ParentId = :c.Id]);
+        Integer blocked = 0;
+        for (String mode : new List<String>{FileAttachmentDeletionBatch.MODE_ATTACHMENTS, FileAttachmentDeletionBatch.MODE_FILES}) {
+            FileAttachmentDeletionBatch batch = new FileAttachmentDeletionBatch('test', 'Contact', mode);
+            try { batch.start(null); } catch (FileAttachmentPurgeService.ObjectPurgeDisabledException e) { blocked++; }
+            try { batch.execute(null, new List<SObject>{new Attachment()}); }
+            catch (FileAttachmentPurgeService.ObjectPurgeDisabledException e) { blocked++; }
+        }
+        try { FileAttachmentPurgeService.purgeForObjects(new List<String>{'Contact'}, true, true); }
+        catch (FileAttachmentPurgeService.ObjectPurgeDisabledException e) { blocked++; }
+        System.assertEquals(5, blocked);
+        System.assertEquals(1, [SELECT count() FROM Attachment]);
+        System.assertEquals(1, [SELECT count() FROM ContentDocument]);
     }
 }

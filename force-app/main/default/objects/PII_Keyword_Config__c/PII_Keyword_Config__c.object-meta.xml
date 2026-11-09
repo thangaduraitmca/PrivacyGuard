@@ -8,5 +8,5 @@
     <label>PII Keyword Configuration</label>
     <nameField><label>Keyword Number</label><type>AutoNumber</type><displayFormat>PGKW-{000000}</displayFormat></nameField>
     <pluralLabel>PII Keyword Configurations</pluralLabel>
-    <sharingModel>ReadWrite</sharingModel>
+    <sharingModel>Private</sharingModel>
 </CustomObject>

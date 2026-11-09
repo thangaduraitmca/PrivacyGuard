@@ -8,5 +8,5 @@
     <label>Data Masking Configuration</label>
     <nameField><label>Configuration Number</label><type>AutoNumber</type><displayFormat>PGCFG-{000000}</displayFormat></nameField>
     <pluralLabel>Data Masking Configurations</pluralLabel>
-    <sharingModel>ReadWrite</sharingModel>
+    <sharingModel>Private</sharingModel>
 </CustomObject>

@@ -33,15 +33,35 @@ public with sharing class RuntimeMaskingJobOrchestrator {
         Masking_Job_Run__c run=new Masking_Job_Run__c(Masking_Job__c=j.Id,Parent_Run__c=parentRunId,Run_Type__c=recovery?'Rerun':'Run',Status__c='Running',Started_At__c=System.now(),Started_By__c=UserInfo.getName(),Total_Objects__c=os.size(),Completed_Objects__c=0,Processed_Records__c=0,Failed_Records__c=0);insert as system run;
         List<Masking_Job_Run_Object__c> ros=new List<Masking_Job_Run_Object__c>();for(Masking_Job_Object__c o:os)ros.add(new Masking_Job_Run_Object__c(Masking_Job_Run__c=run.Id,Object_API_Name__c=o.Object_API_Name__c,Sequence__c=o.Sequence__c,Status__c='Queued',Processed_Records__c=0,Failed_Records__c=0));insert as system ros;
         j.Last_Status__c='Running';j.Last_Run_At__c=System.now();update as user j; AutomationManagerService.disableAllAutomations(String.valueOf(run.Id));
-        if(j.Execution_Mode__c=='Parallel'){for(Masking_Job_Run_Object__c ro:ros)launch(j,run,ro,recovery,parentRunId);}else launch(j,run,ros[0],recovery,parentRunId); return run.Id; }
+        if(j.Execution_Mode__c=='Parallel')launchAll(j,run,ros,recovery,parentRunId);else launch(j,run,ros[0],recovery,parentRunId); return run.Id; }
     private static void launch(Masking_Job__c j,Masking_Job_Run__c run,Masking_Job_Run_Object__c ro,Boolean recovery,Id parentRunId){
-        Map<String,List<MaskingConfigService.FieldConfig>> cfg=MaskingConfigService.getActiveFieldConfigsByObject();List<MaskingConfigService.FieldConfig> fields=cfg.get(ro.Object_API_Name__c);if(fields==null||fields.isEmpty()){completeObject(ro.Id,0,1,'No active field configuration found.');return;}
-        String tracking; List<Masking_Job_Object__c> jo=[SELECT Delta_Tracking_Field__c FROM Masking_Job_Object__c WHERE Masking_Job__c=:j.Id AND Object_API_Name__c=:ro.Object_API_Name__c WITH USER_MODE LIMIT 1]; if(!jo.isEmpty())tracking=jo[0].Delta_Tracking_Field__c;
-        tracking = MaskingCompletionService.requireCheckbox(ro.Object_API_Name__c, tracking);
+        launchAll(j, run, new List<Masking_Job_Run_Object__c>{ ro }, recovery, parentRunId);
+    }
+    // Starts one batch per run object, then persists every run-object status in a single DML.
+    // Batches only begin after this transaction commits, so writing status after enqueueing is safe.
+    private static void launchAll(Masking_Job__c j,Masking_Job_Run__c run,List<Masking_Job_Run_Object__c> runObjects,Boolean recovery,Id parentRunId){
         if (recovery && parentRunId == null) throw new AuraHandledException('A parent run is required for failed-record recovery.');
-        ro.Status__c='Running';ro.Started_At__c=System.now();update as system ro; Integer bs=j.Batch_Size__c==null?200:Integer.valueOf(j.Batch_Size__c);Id aid = recovery
-            ? Database.executeBatch(new MaskingFailedRecordRecoveryBatch(j.Job_Name__c, ro.Object_API_Name__c, fields, j.Run_Mode__c, tracking, run.Id, ro.Id, parentRunId), bs)
-            : Database.executeBatch(new MaskingBatch(j.Job_Name__c, ro.Object_API_Name__c, fields, j.Run_Mode__c, tracking, run.Id, ro.Id, null, false), bs);ro.Async_Job_Id__c=String.valueOf(aid);update as system ro;
+        Map<String,List<MaskingConfigService.FieldConfig>> cfg=MaskingConfigService.getActiveFieldConfigsByObject();
+        Map<String,String> trackingByObject=new Map<String,String>();
+        for (Masking_Job_Object__c jo : [SELECT Object_API_Name__c, Delta_Tracking_Field__c FROM Masking_Job_Object__c WHERE Masking_Job__c=:j.Id WITH USER_MODE ORDER BY Sequence__c LIMIT 1000]) {
+            if (!trackingByObject.containsKey(jo.Object_API_Name__c)) trackingByObject.put(jo.Object_API_Name__c, jo.Delta_Tracking_Field__c);
+        }
+        Integer bs=j.Batch_Size__c==null?200:Integer.valueOf(j.Batch_Size__c);
+        List<Masking_Job_Run_Object__c> launched=new List<Masking_Job_Run_Object__c>();
+        List<Masking_Job_Run_Object__c> unconfigured=new List<Masking_Job_Run_Object__c>();
+        for (Masking_Job_Run_Object__c ro : runObjects) {
+            List<MaskingConfigService.FieldConfig> fields=cfg.get(ro.Object_API_Name__c);
+            if (fields==null||fields.isEmpty()) { unconfigured.add(ro); continue; }
+            String tracking = MaskingCompletionService.requireCheckbox(ro.Object_API_Name__c, trackingByObject.get(ro.Object_API_Name__c));
+            Id aid = recovery
+                ? Database.executeBatch(new MaskingFailedRecordRecoveryBatch(j.Job_Name__c, ro.Object_API_Name__c, fields, j.Run_Mode__c, tracking, run.Id, ro.Id, parentRunId), bs)
+                : Database.executeBatch(new MaskingBatch(j.Job_Name__c, ro.Object_API_Name__c, fields, j.Run_Mode__c, tracking, run.Id, ro.Id, null, false), bs);
+            ro.Status__c='Running'; ro.Started_At__c=System.now(); ro.Async_Job_Id__c=String.valueOf(aid);
+            launched.add(ro);
+        }
+        if (!launched.isEmpty()) update as system launched;
+        // Not normally reachable: start() preflight rejects objects without active configuration.
+        for (Masking_Job_Run_Object__c ro : unconfigured) completeObject(ro.Id, 0, 1, 'No active field configuration found.');
     }
     // Reconcile batches that terminate before MaskingBatch.finish() (including start() exceptions).
     // Called by control-panel reads; status transitions are persisted, not inferred only in the UI.

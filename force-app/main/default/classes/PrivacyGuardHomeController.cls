@@ -74,7 +74,7 @@ public with sharing class PrivacyGuardHomeController {
             // Aggregate every visible run; do not derive totals from the recent list.
             for (AggregateResult aggregateRow : [
                 SELECT Status__c runStatus, COUNT(Id) runCount FROM Masking_Job_Run__c
-                WITH USER_MODE GROUP BY Status__c
+                WITH USER_MODE GROUP BY Status__c LIMIT 100
             ]) {
                 String status = String.valueOf(aggregateRow.get('runStatus'));
                 Integer count = (Integer)aggregateRow.get('runCount');

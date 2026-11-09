@@ -32,7 +32,7 @@ public with sharing class MaskingConfigPromoter {
             SELECT Object_API_Name__c, Field_API_Name__c
             FROM PII_Scan_Result__c
             WHERE Review_Status__c = 'Accepted' AND Already_Configured__c = false
-            WITH SECURITY_ENFORCED
+            WITH USER_MODE
         ]) {
             String devName = (finding.Object_API_Name__c + '_' + finding.Field_API_Name__c)
                 .replaceAll('[^a-zA-Z0-9]', '_');

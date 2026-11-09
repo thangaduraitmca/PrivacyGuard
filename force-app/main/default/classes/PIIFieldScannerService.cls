@@ -54,7 +54,9 @@ public with sharing class PIIFieldScannerService {
             ? ComplianceCategorizationService.getComplianceTags(objectApiName)
             : new Map<String,ComplianceCategorizationService.ComplianceInfo>();
         if(includeNative && String.isNotBlank(ComplianceCategorizationService.getLastWarning())) {
-            MaskingLogger.logInfo('PII_Classification_'+scanBatchId,objectApiName+': '+ComplianceCategorizationService.getLastWarning());
+            // Queued, not inserted: callers flush once per transaction (no DML per scanned object).
+            MaskingLogger.queueLog('PII_Classification_'+scanBatchId, objectApiName, null, null,
+                objectApiName+': '+ComplianceCategorizationService.getLastWarning(), 'Success');
         }
 
         for (Schema.SObjectField field : objDescribe.fields.getMap().values()) {
@@ -143,13 +145,13 @@ public with sharing class PIIFieldScannerService {
         List<String> values = new List<String>();
         Map<String, Boolean> orgState = new Map<String, Boolean>();
         Map<String, String> orgValue = new Map<String, String>();
-        for (PII_Keyword_Config__c k : [SELECT Keyword__c, Is_Active__c FROM PII_Keyword_Config__c WITH USER_MODE ]) {
+        for (PII_Keyword_Config__c k : [SELECT Keyword__c, Is_Active__c FROM PII_Keyword_Config__c WITH USER_MODE LIMIT 10000]) {
             if (String.isBlank(k.Keyword__c)) continue;
             String key = normalizeForKeywordMatch(k.Keyword__c);
             orgState.put(key, k.Is_Active__c);
             orgValue.put(key, k.Keyword__c);
         }
-        if (cachedKeywords == null) cachedKeywords = [SELECT Keyword__c FROM PII_Keyword__mdt];
+        if (cachedKeywords == null) cachedKeywords = [SELECT Keyword__c FROM PII_Keyword__mdt LIMIT 10000];
         Set<String> emitted = new Set<String>();
         for (PII_Keyword__mdt k : cachedKeywords) {
             if (String.isBlank(k.Keyword__c)) continue;
@@ -168,11 +170,11 @@ public with sharing class PIIFieldScannerService {
             cachedConfiguredKeys = new Set<String>();
             for (Masking_Configuration__mdt cfg : [
                 SELECT Object_API_Name__c, Field_API_Name__c
-                FROM Masking_Configuration__mdt
+                FROM Masking_Configuration__mdt LIMIT 10000
             ]) {
                 cachedConfiguredKeys.add((cfg.Object_API_Name__c + '.' + cfg.Field_API_Name__c).toLowerCase());
             }
-            for (Masking_Field_Config__c cfg : [SELECT Object_API_Name__c, Field_API_Name__c FROM Masking_Field_Config__c WITH USER_MODE ]) {
+            for (Masking_Field_Config__c cfg : [SELECT Object_API_Name__c, Field_API_Name__c FROM Masking_Field_Config__c WITH USER_MODE LIMIT 10000]) {
                 cachedConfiguredKeys.add((cfg.Object_API_Name__c + '.' + cfg.Field_API_Name__c).toLowerCase());
             }
         }

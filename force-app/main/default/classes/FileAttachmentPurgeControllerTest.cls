@@ -29,10 +29,12 @@ private with sharing class FileAttachmentPurgeControllerTest {
         EnvironmentSafetyService.sandboxOverrideForTests = true;
 
         Test.startTest();
-        FileAttachmentPurgeController.purgeObjects(new List<String>{ 'Contact' }, true, false);
+        Boolean blocked = false;
+        try { FileAttachmentPurgeController.purgeObjects(new List<String>{ 'Contact' }, true, false); }
+        catch (AuraHandledException e) { blocked = e.getMessage().contains('Object-wide purge is disabled'); }
         Test.stopTest();
-
-        System.assertEquals(0, [SELECT COUNT() FROM Attachment]);
+        System.assert(blocked);
+        System.assertEquals(1, [SELECT COUNT() FROM Attachment]);
     }
 
     @isTest

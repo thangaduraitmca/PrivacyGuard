@@ -9,6 +9,6 @@
         <label>Scan Result Number</label>
         <displayFormat>PII-{0000}</displayFormat>
     </nameField>
-    <sharingModel>ReadWrite</sharingModel>
+    <sharingModel>Private</sharingModel>
     <enableFeeds>false</enableFeeds>
 </CustomObject>

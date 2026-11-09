@@ -50,6 +50,7 @@ private class PIIClassificationDiscoveryTest {
         ComplianceCategorizationService.testWarning='Classification metadata could not be read.';
         Boolean foundFax=false;
         for(PII_Scan_Result__c row:PIIFieldScannerService.scanObject('Contact','lookup-warning'))if(row.Field_API_Name__c=='Fax')foundFax=true;
+        MaskingLogger.flush();
         System.assert(foundFax);System.assertEquals(1,[SELECT count() FROM Masking_Log__c WHERE Job_Name__c='PII_Classification_lookup-warning']);
     }
 }

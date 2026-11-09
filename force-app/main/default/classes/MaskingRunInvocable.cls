@@ -36,7 +36,7 @@ public with sharing class MaskingRunInvocable {
 
     @InvocableMethod(
         label='Run Data Masking Jobs'
-        description='Runs every active Masking_Job_Sequence__mdt job. Blocked automatically outside of Sandboxes unless explicitly overridden.'
+        description='Runs every active Masking_Job_Sequence__mdt job. Blocked outside of Sandboxes; production execution is not supported.'
         category='PrivacyGuard'
     )
     public static List<Result> runMaskingJobs() {

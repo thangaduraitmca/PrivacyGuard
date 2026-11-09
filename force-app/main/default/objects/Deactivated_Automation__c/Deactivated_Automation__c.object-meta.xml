@@ -9,6 +9,6 @@
         <label>Deactivated Automation Number</label>
         <displayFormat>DEACT-{0000}</displayFormat>
     </nameField>
-    <sharingModel>ReadWrite</sharingModel>
+    <sharingModel>Private</sharingModel>
     <enableFeeds>false</enableFeeds>
 </CustomObject>

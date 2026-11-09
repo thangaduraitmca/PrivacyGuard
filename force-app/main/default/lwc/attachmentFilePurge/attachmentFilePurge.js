@@ -2,7 +2,6 @@ import { LightningElement, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import availableObjects from '@salesforce/apex/FileAttachmentPurgeController.availableObjects';
 import scanObjects from '@salesforce/apex/FileAttachmentPurgeController.scanObjects';
-import purgeObjects from '@salesforce/apex/FileAttachmentPurgeController.purgeObjects';
 
 export default class AttachmentFilePurge extends LightningElement {
     @track objects = [];
@@ -41,7 +40,7 @@ export default class AttachmentFilePurge extends LightningElement {
     get totalItems() { return (this.deleteAttachments ? this.totalAttachments : 0) + (this.deleteFiles ? this.totalFiles : 0); }
     get hasWarnings() { return this.scanRows.some(r => r.warning); }
     get purgeDisabled() { return !this.canPurge; }
-    get canPurge() { return this.scanned && !this.busy && !this.hasWarnings && this.totalItems > 0 && this.acknowledged && this.confirmation === 'PURGE'; }
+    get canPurge() { return false; }
     get scanRowsDisplay() { return this.scanRows.map(r => ({...r, key:r.objectName, warningText:r.warning || '—'})); }
     handleSearch(e) { this.search = e.detail.value || ''; }
     handleSelect(e) {
@@ -73,26 +72,7 @@ export default class AttachmentFilePurge extends LightningElement {
         finally { this.busy = false; }
     }
     async handlePurge() {
-        if (!this.canPurge) return;
-        this.busy = true;
-        try {
-            let submitted = 0;
-            for (const objectName of [...this.selected]) {
-                this.progress = `Submitting ${submitted + 1} of ${this.selected.length}: ${objectName}`;
-                try {
-                    await purgeObjects({objectApiNames:[objectName], deleteAttachments:this.deleteAttachments, deleteFiles:this.deleteFiles});
-                    submitted++;
-                } catch (error) {
-                    this.progress = `${submitted} object requests submitted; stopped at ${objectName}. Earlier requests may be running. Review job logs before retrying.`;
-                    this.resetScan();
-                    throw error;
-                }
-            }
-            this.progress = `${submitted} object requests submitted. Review background job logs for completion.`;
-            this.toast('Purge submitted', this.progress, 'success');
-            this.resetScan();
-        } catch (e) { this.toast('Purge failed', this.message(e), 'error'); }
-        finally { this.busy = false; }
+        this.toast('Object-wide purge disabled', 'Use All files to review and explicitly select accessible items for deletion.', 'warning');
     }
     message(e) { return e?.body?.message || e?.message || 'Unexpected error'; }
     toast(title, message, variant) { this.dispatchEvent(new ShowToastEvent({title,message,variant})); }

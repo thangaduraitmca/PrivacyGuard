@@ -23,7 +23,7 @@ private class PrivacyGuardJobReportingTest {
         Test.startTest();MaskingJobManagerService.RunDetails d=MaskingControlPanelController.getLatestRun(j.Id);Test.stopTest();
         System.assertEquals(r.Id,d.run.id);System.assertEquals('Failed',d.run.status);System.assertEquals(2,d.run.processed);System.assertEquals(1,d.run.failed);
         System.assertEquals(1,d.objects.size());System.assertEquals('Contact',d.objects[0].objectApiName);System.assertEquals('Partial',d.objects[0].status);System.assertEquals('Invalid input',d.objects[0].errorSummary);
-        System.assertEquals(1,d.logs.size());System.assertEquals('Masking Error',d.logs[0].errorCategory);System.assertEquals('Validation failed',d.logs[0].adminMessage);System.assertEquals('Validation failed',d.logs[0].technicalDetails);System.assertNotEquals(null,d.logs[0].suggestedAction);
+        System.assertEquals(1,d.logs.size());System.assertEquals('Masking Error',d.logs[0].errorCategory);System.assertEquals('Review configuration, permissions and Salesforce automation before retrying.',d.logs[0].adminMessage);System.assertEquals('Operation failed. Review the operation status and affected record identifiers.',d.logs[0].technicalDetails);System.assertNotEquals(null,d.logs[0].suggestedAction);
     }
     @IsTest static void scheduledBoundaryPersistsJobAndManualCancelsSchedule() {
         EnvironmentSafetyService.sandboxOverrideForTests=true;

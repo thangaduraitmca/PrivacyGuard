@@ -97,12 +97,15 @@ private with sharing class MaskingJobOrchestratorTest {
         System.assertEquals(false, settings.Bypass_All_Automations__c);
 
         List<Masking_Log__c> skipLogs = [
-            SELECT Error_Message__c FROM Masking_Log__c
+            SELECT Error_Message__c, Technical_Details__c FROM Masking_Log__c
             WHERE Object_API_Name__c = 'Opportunity' AND Status__c = 'Failed'
         ];
         System.assert(!skipLogs.isEmpty(), 'Expected a log entry explaining why the unconfigured job was skipped');
-        System.assert(skipLogs[0].Error_Message__c.contains('AdHoc_Mask_Opportunity'),
-            'Expected the log message to reference the skipped job by name: ' + skipLogs[0].Error_Message__c);
+        System.assertEquals(
+            'Operation failed. Review the operation status and affected record identifiers.',
+            skipLogs[0].Error_Message__c, 'Failed-operation logs must contain the sanitized message.');
+        System.assertEquals(null, skipLogs[0].Technical_Details__c,
+            'Raw failure details must not be persisted.');
     }
 
     @isTest

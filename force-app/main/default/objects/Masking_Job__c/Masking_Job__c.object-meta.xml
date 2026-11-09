@@ -3,5 +3,5 @@
     <deploymentStatus>Deployed</deploymentStatus><description>PrivacyGuard runtime masking job orchestration and audit data.</description>
     <label>Masking Job</label><pluralLabel>Masking Jobs</pluralLabel>
     <nameField><type>AutoNumber</type><label>Masking Job Number</label><displayFormat>MJOB-{0000}</displayFormat></nameField>
-    <sharingModel>ReadWrite</sharingModel><enableFeeds>false</enableFeeds>
+    <sharingModel>Private</sharingModel><enableFeeds>false</enableFeeds>
 </CustomObject>
